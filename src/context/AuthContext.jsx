@@ -1,10 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from './ToastContext';
-import { mockLogin, mockRegister } from '../services/mockData';
+import { authApi } from '../services/api';
 
 const AuthContext = createContext();
-
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }) {
@@ -19,11 +18,13 @@ export function AuthProvider({ children }) {
 
   const login = async ({ email, password }) => {
     try {
-      const userData = await mockLogin(email, password);
+      const userData = await authApi.login(email, password);
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('authToken', userData.token);
       addToast({ title: 'Login successful', type: 'success' });
       navigate('/');
+      return userData;
     } catch (err) {
       addToast({ title: err.message || 'Login failed', type: 'error' });
       throw err;
@@ -32,11 +33,13 @@ export function AuthProvider({ children }) {
 
   const register = async (data) => {
     try {
-      const userData = await mockRegister(data);
+      const userData = await authApi.register(data);
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('authToken', userData.token);
       addToast({ title: 'Registration successful', type: 'success' });
       navigate('/');
+      return userData;
     } catch (err) {
       addToast({ title: err.message || 'Register failed', type: 'error' });
       throw err;
@@ -46,6 +49,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
+    localStorage.removeItem('authToken');
     navigate('/login');
     addToast({ title: 'Logged out', type: 'info' });
   };

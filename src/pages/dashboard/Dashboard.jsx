@@ -1,63 +1,87 @@
 import React from 'react';
 import Card from '../../components/ui/Card';
 import Loader from '../../components/ui/Loader';
+import Badge from '../../components/ui/Badge';
+import Table from '../../components/ui/Table';
 import { useApi } from '../../hooks/useApi';
-import { BarChart, XAxis, YAxis, Tooltip, ResponsiveContainer, Bar } from 'recharts';
-
-// Mock summary data (fallback if API not ready)
-const mockSummary = {
-  totalProducts: 128,
-  totalSales: 542,
-  totalRevenue: 12450,
-  lowStockItems: 12,
-  totalCustomers: 85,
-  totalSuppliers: 7,
-};
+import { dashboardApi } from '../../services/api';
+import { useDataRefresh } from '../../context/DataRefreshContext';
+import { formatCurrency, formatDateTime } from '../../utils/format';
+import { movementTypeLabel, movementTypeVariant } from '../../utils/status';
+import { BarChart, XAxis, YAxis, Tooltip, ResponsiveContainer, Bar, LineChart, Line } from 'recharts';
 
 export default function Dashboard() {
-  const { data: summary, loading } = useApi('/summary');
-  const stats = summary || mockSummary;
+  const { version } = useDataRefresh();
+  const { data: stats, loading } = useApi(() => dashboardApi.summary(), [version]);
 
-  const chartData = [
-    { name: 'Jan', sales: 400 },
-    { name: 'Feb', sales: 300 },
-    { name: 'Mar', sales: 500 },
-    { name: 'Apr', sales: 200 },
-    { name: 'May', sales: 600 },
-    { name: 'Jun', sales: 700 },
+  if (loading || !stats) return <Loader className="py-12" />;
+
+  const movementColumns = [
+    { key: 'type', title: 'Type', render: (row) => (
+      <Badge variant={movementTypeVariant[row.type]}>{movementTypeLabel[row.type]}</Badge>
+    ) },
+    { key: 'productName', title: 'Product' },
+    { key: 'quantity', title: 'Qty', render: (row) => (
+      <span className={row.quantity >= 0 ? 'text-green-600' : 'text-red-600'}>
+        {row.quantity >= 0 ? '+' : ''}{row.quantity}
+      </span>
+    ) },
+    { key: 'createdAt', title: 'Date', render: (row) => formatDateTime(row.createdAt) },
   ];
 
-  const renderChart = (title, dataKey, fill = '#6366F1') => (
-    <Card title={title} className="h-64">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData}>
-          <XAxis dataKey="name" hide />
-          <YAxis hide />
-          <Tooltip />
-          <Bar dataKey="sales" fill={fill} />
-        </BarChart>
-      </ResponsiveContainer>
-    </Card>
-  );
+  const saleColumns = [
+    { key: 'id', title: 'Order', render: (row) => `#${row.id}` },
+    { key: 'customerName', title: 'Customer' },
+    { key: 'total', title: 'Total', render: (row) => formatCurrency(row.total) },
+    { key: 'status', title: 'Status', render: (row) => <Badge variant="primary">{row.status}</Badge> },
+  ];
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Dashboard</h1>
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <Card title="Total Products">{stats.totalProducts}</Card>
-        <Card title="Total Sales">{stats.totalSales}</Card>
-        <Card title="Total Revenue">${stats.totalRevenue}</Card>
-        <Card title="Low Stock Items">{stats.lowStockItems}</Card>
-        <Card title="Customers">{stats.totalCustomers}</Card>
-        <Card title="Suppliers">{stats.totalSuppliers}</Card>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+        <Card title="Products"><span className="text-2xl font-bold">{stats.totalProducts}</span></Card>
+        <Card title="Sales"><span className="text-2xl font-bold">{stats.totalSales}</span></Card>
+        <Card title="Revenue"><span className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</span></Card>
+        <Card title="Low Stock"><span className="text-2xl font-bold text-yellow-600">{stats.lowStockItems}</span></Card>
+        <Card title="Customers"><span className="text-2xl font-bold">{stats.totalCustomers}</span></Card>
+        <Card title="Suppliers"><span className="text-2xl font-bold">{stats.totalSuppliers}</span></Card>
+        <Card title="Inventory Value" className="col-span-2">
+          <span className="text-2xl font-bold text-primary">{formatCurrency(stats.inventoryValue)}</span>
+        </Card>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {loading ? <Loader /> : renderChart('Monthly Sales', 'sales')}
-        {renderChart('Revenue', 'sales', '#10B981')}
-        {renderChart('Inventory Trend', 'sales', '#F59E0B')}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card title="Monthly Sales" className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={stats.chartData}>
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip formatter={(v) => formatCurrency(v)} />
+              <Bar dataKey="sales" fill="#6366F1" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+        <Card title="Revenue Trend" className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={stats.chartData}>
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip formatter={(v) => formatCurrency(v)} />
+              <Line type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={2} dot={{ r: 4 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card title="Recent Stock Movements">
+          <Table columns={movementColumns} data={stats.recentMovements} />
+        </Card>
+        <Card title="Recent Sales">
+          <Table columns={saleColumns} data={stats.recentSales} />
+        </Card>
       </div>
     </div>
   );

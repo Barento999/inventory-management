@@ -14,7 +14,7 @@ export default function Table({ columns = [], data = [] }) {
         <tbody>
           {data.length > 0 ? (
             data.map((row, i) => (
-              <tr key={i} className="border-b border-gray-200 dark:border-gray-600">
+              <tr key={row.id ?? i} className="border-b border-gray-200 dark:border-gray-600">
                 {columns.map((col) => (
                   <td key={col.key} className="px-4 py-2">{col.render ? col.render(row) : row[col.key]}</td>
                 ))}

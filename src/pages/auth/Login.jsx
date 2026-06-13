@@ -18,9 +18,12 @@ export default function Login() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="w-full max-w-md bg-white dark:bg-gray-800 p-8 rounded shadow">
-        <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100 text-center">Sign in to your account</h2>
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 px-4">
+      <div className="w-full max-w-md bg-white dark:bg-gray-800 p-8 rounded-lg shadow">
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold text-primary">InventoryPro</h1>
+          <h2 className="text-lg font-semibold mt-2 text-gray-800 dark:text-gray-100">Sign in to your account</h2>
+        </div>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Input
             id="email"
@@ -38,7 +41,7 @@ export default function Login() {
           />
           <div className="flex items-center justify-between">
             <label className="inline-flex items-center">
-              <input type="checkbox" className="form-checkbox h-4 w-4 text-primary" {...register('remember')} />
+              <input type="checkbox" className="form-checkbox h-4 w-4 text-primary rounded" {...register('remember')} />
               <span className="ml-2 text-sm text-gray-600 dark:text-gray-300">Remember me</span>
             </label>
             <Link to="/forgot-password" className="text-sm text-primary hover:underline">
@@ -49,8 +52,13 @@ export default function Login() {
             {isSubmitting ? 'Signing in...' : 'Sign In'}
           </Button>
         </form>
+        <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900 rounded text-xs text-gray-500">
+          <p className="font-medium mb-1">Demo accounts:</p>
+          <p>admin@demo.com / admin123</p>
+          <p>manager@demo.com / manager123</p>
+        </div>
         <p className="mt-4 text-center text-sm text-gray-600 dark:text-gray-300">
-          Don’t have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link to="/register" className="text-primary font-medium hover:underline">
             Register
           </Link>

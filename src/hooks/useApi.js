@@ -1,29 +1,50 @@
-import { useEffect, useState } from 'react';
-import { getMockData } from '../services/mockData';
+import { useCallback, useEffect, useState } from 'react';
 
-export function useApi(endpoint) {
+export function useApi(fetcher, deps = []) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchData() {
-      setLoading(true);
-      try {
-        const result = await getMockData(endpoint);
-        if (!cancelled) setData(result);
-      } catch (err) {
-        if (!cancelled) setError(err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+  const reload = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await fetcher();
+      setData(result);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
     }
-    fetchData();
-    return () => {
-      cancelled = true;
-    };
-  }, [endpoint]);
+  }, deps);
 
-  return { data, loading, error };
+  useEffect(() => {
+    reload();
+  }, [reload]);
+
+  return { data, loading, error, reload };
+}
+
+export function useMutation(mutationFn) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const mutate = useCallback(
+    async (...args) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await mutationFn(...args);
+        return result;
+      } catch (err) {
+        setError(err);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [mutationFn]
+  );
+
+  return { mutate, loading, error };
 }
