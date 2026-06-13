@@ -245,7 +245,48 @@ export function loadStore() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (raw) {
     try {
-      return JSON.parse(raw);
+      const data = JSON.parse(raw);
+      // Merge new arrays from defaultData if they don't exist in loaded data
+      const arraysToMerge = ['warehouses', 'serialNumbers', 'batches', 'quotes', 'returns', 'invoices', 'roles', 'auditLogs'];
+      arraysToMerge.forEach((key) => {
+        if (!data[key] || data[key].length === 0) {
+          data[key] = structuredClone(defaultData[key]);
+        }
+      });
+      // Merge new nextIds if they don't exist
+      const idsToMerge = ['warehouse', 'serialNumber', 'batch', 'quote', 'return', 'invoice', 'role', 'auditLog'];
+      idsToMerge.forEach((key) => {
+        if (!data.nextIds[key]) {
+          data.nextIds[key] = defaultData.nextIds[key];
+        }
+      });
+      // Merge new product fields if they don't exist
+      data.products = data.products.map((p) => ({
+        ...p,
+        barcode: p.barcode || '',
+        trackSerial: p.trackSerial || false,
+        trackExpiration: p.trackExpiration || false,
+        expirationDays: p.expirationDays || null,
+        warehouseId: p.warehouseId || 1,
+        variants: p.variants || [],
+      }));
+      // Merge new purchase fields if they don't exist
+      data.purchases = data.purchases.map((p) => ({
+        ...p,
+        approvalStatus: p.approvalStatus || 'pending',
+      }));
+      // Merge new sale fields if they don't exist
+      data.sales = data.sales.map((s) => ({
+        ...s,
+        shipping: s.shipping || null,
+      }));
+      // Merge new user fields if they don't exist
+      data.users = data.users.map((u) => ({
+        ...u,
+        permissions: u.permissions || [],
+        status: u.status || 'active',
+      }));
+      return data;
     } catch {
       localStorage.removeItem(STORAGE_KEY);
     }
