@@ -79,10 +79,13 @@ export default function Settings() {
                 { value: 'USD', label: 'USD ($)' },
                 { value: 'EUR', label: 'EUR (€)' },
                 { value: 'GBP', label: 'GBP (£)' },
+                { value: 'CAD', label: 'CAD ($)' },
+                { value: 'AUD', label: 'AUD ($)' },
               ]}
               {...register('currency')} />
             <Input id="taxRate" label="Tax Rate (%)" type="number" step="0.01"
               {...register('taxRate')} />
+            <Input id="taxId" label="Tax ID / VAT Number" {...register('taxId')} />
             <Input id="lowStockThreshold" label="Default Low Stock Threshold" type="number"
               {...register('lowStockThreshold')} />
             <Select id="timezone" label="Timezone"
@@ -91,11 +94,29 @@ export default function Settings() {
                 { value: 'America/New_York', label: 'Eastern (US)' },
                 { value: 'America/Los_Angeles', label: 'Pacific (US)' },
                 { value: 'Europe/London', label: 'London' },
+                { value: 'Europe/Paris', label: 'Paris' },
+                { value: 'Asia/Tokyo', label: 'Tokyo' },
               ]}
               {...register('timezone')} />
           </div>
           <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Settings'}</Button>
         </form>
+      </Card>
+
+      <Card title="Payment Settings">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <input type="checkbox" id="enableStripe" {...register('enableStripe')} className="rounded" />
+            <label htmlFor="enableStripe" className="text-sm">Enable Stripe Payments</label>
+          </div>
+          <Input id="stripePublicKey" label="Stripe Public Key" {...register('stripePublicKey')} />
+          <Input id="stripeSecretKey" label="Stripe Secret Key" type="password" {...register('stripeSecretKey')} />
+          <div className="flex items-center gap-2">
+            <input type="checkbox" id="enablePayPal" {...register('enablePayPal')} className="rounded" />
+            <label htmlFor="enablePayPal" className="text-sm">Enable PayPal</label>
+          </div>
+          <Input id="paypalClientId" label="PayPal Client ID" {...register('paypalClientId')} />
+        </div>
       </Card>
 
       <Card title="Appearance">

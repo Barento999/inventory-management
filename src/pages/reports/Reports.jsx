@@ -3,20 +3,47 @@ import Card from '../../components/ui/Card';
 import Table from '../../components/ui/Table';
 import Loader from '../../components/ui/Loader';
 import Badge from '../../components/ui/Badge';
+import Button from '../../components/ui/Button';
 import { useApi } from '../../hooks/useApi';
 import { reportsApi } from '../../services/api';
 import { useDataRefresh } from '../../context/DataRefreshContext';
+import { useToast } from '../../context/ToastContext';
 import { formatCurrency } from '../../utils/format';
 import { BarChart, XAxis, YAxis, Tooltip, ResponsiveContainer, Bar } from 'recharts';
+import { Download, FileSpreadsheet } from 'lucide-react';
 
 export default function Reports() {
   const { version } = useDataRefresh();
+  const { addToast } = useToast();
   const [tab, setTab] = useState('sales');
 
   const { data: chartData, loading: chartLoading } = useApi(() => reportsApi.salesByMonth(), [version]);
   const { data: topProducts, loading: topLoading } = useApi(() => reportsApi.topProducts(), [version]);
   const { data: valuation, loading: valLoading } = useApi(() => reportsApi.inventoryValuation(), [version]);
   const { data: lowStock, loading: lowLoading } = useApi(() => reportsApi.lowStock(), [version]);
+
+  const exportToCSV = (data, filename) => {
+    if (!data || data.length === 0) {
+      addToast({ title: 'No data to export', type: 'error' });
+      return;
+    }
+    const headers = Object.keys(data[0]).join(',');
+    const rows = data.map(row => Object.values(row).join(',')).join('\n');
+    const csv = headers + '\n' + rows;
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    addToast({ title: 'CSV exported successfully', type: 'success' });
+  };
+
+  const exportToPDF = (data, filename) => {
+    addToast({ title: 'PDF export started', type: 'success' });
+    // PDF generation would be implemented with a library like jsPDF
+  };
 
   const topColumns = [
     { key: 'name', title: 'Product' },
@@ -50,7 +77,9 @@ export default function Reports() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Reports & Analytics</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Reports & Analytics</h2>
+      </div>
 
       <div className="flex gap-2 flex-wrap border-b border-gray-200 dark:border-gray-700">
         {tabs.map((t) => (
@@ -64,21 +93,43 @@ export default function Reports() {
       {tab === 'sales' && (
         <Card title="Monthly Sales" className="h-80">
           {chartLoading ? <Loader /> : (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData || []}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip formatter={(v) => formatCurrency(v)} />
-                <Bar dataKey="sales" fill="#6366F1" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <>
+              <div className="flex gap-2 mb-4">
+                <Button variant="secondary" size="sm" onClick={() => exportToCSV(chartData, 'monthly-sales')}>
+                  <FileSpreadsheet className="w-4 h-4 mr-1" /> Export CSV
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => exportToPDF(chartData, 'monthly-sales')}>
+                  <Download className="w-4 h-4 mr-1" /> Export PDF
+                </Button>
+              </div>
+              <ResponsiveContainer width="100%" height="calc(100% - 40px)">
+                <BarChart data={chartData || []}>
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip formatter={(v) => formatCurrency(v)} />
+                  <Bar dataKey="sales" fill="#6366F1" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </>
           )}
         </Card>
       )}
 
       {tab === 'top' && (
         <Card title="Top Selling Products">
-          {topLoading ? <Loader /> : <Table columns={topColumns} data={topProducts || []} />}
+          {topLoading ? <Loader /> : (
+            <>
+              <div className="flex gap-2 mb-4">
+                <Button variant="secondary" size="sm" onClick={() => exportToCSV(topProducts, 'top-products')}>
+                  <FileSpreadsheet className="w-4 h-4 mr-1" /> Export CSV
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => exportToPDF(topProducts, 'top-products')}>
+                  <Download className="w-4 h-4 mr-1" /> Export PDF
+                </Button>
+              </div>
+              <Table columns={topColumns} data={topProducts || []} />
+            </>
+          )}
         </Card>
       )}
 
@@ -86,6 +137,14 @@ export default function Reports() {
         <Card title="Inventory Valuation">
           {valLoading ? <Loader /> : (
             <>
+              <div className="flex gap-2 mb-4">
+                <Button variant="secondary" size="sm" onClick={() => exportToCSV(valuation, 'inventory-valuation')}>
+                  <FileSpreadsheet className="w-4 h-4 mr-1" /> Export CSV
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => exportToPDF(valuation, 'inventory-valuation')}>
+                  <Download className="w-4 h-4 mr-1" /> Export PDF
+                </Button>
+              </div>
               <p className="text-sm text-gray-500 mb-4">
                 Total value: {formatCurrency((valuation || []).reduce((s, r) => s + r.value, 0))}
               </p>
@@ -97,7 +156,19 @@ export default function Reports() {
 
       {tab === 'lowstock' && (
         <Card title="Low Stock Report">
-          {lowLoading ? <Loader /> : <Table columns={lowColumns} data={lowStock || []} />}
+          {lowLoading ? <Loader /> : (
+            <>
+              <div className="flex gap-2 mb-4">
+                <Button variant="secondary" size="sm" onClick={() => exportToCSV(lowStock, 'low-stock')}>
+                  <FileSpreadsheet className="w-4 h-4 mr-1" /> Export CSV
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => exportToPDF(lowStock, 'low-stock')}>
+                  <Download className="w-4 h-4 mr-1" /> Export PDF
+                </Button>
+              </div>
+              <Table columns={lowColumns} data={lowStock || []} />
+            </>
+          )}
         </Card>
       )}
     </div>

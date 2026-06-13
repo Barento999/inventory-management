@@ -17,6 +17,16 @@ import PurchaseList from '../pages/purchases/PurchaseList';
 import SaleList from '../pages/sales/SaleList';
 import Reports from '../pages/reports/Reports';
 import Settings from '../pages/settings/Settings';
+import WarehouseList from '../pages/warehouses/WarehouseList';
+import WarehouseDetails from '../pages/warehouses/WarehouseDetails';
+import SerialNumberList from '../pages/serial-numbers/SerialNumberList';
+import BatchList from '../pages/batches/BatchList';
+import QuoteList from '../pages/quotes/QuoteList';
+import ReturnList from '../pages/returns/ReturnList';
+import InvoiceList from '../pages/invoices/InvoiceList';
+import UserList from '../pages/users/UserList';
+import AuditLogList from '../pages/audit-logs/AuditLogList';
+import ShippingList from '../pages/shipping/ShippingList';
 import { useAuth } from '../context/AuthContext';
 
 function RequireAuth({ children }) {
@@ -53,6 +63,17 @@ export default function AppRoutes() {
         <Route path="categories/:id" element={<CategoryDetails />} />
         <Route path="suppliers" element={<SupplierList />} />
         <Route path="customers" element={<CustomerList />} />
+        <Route path="warehouses" element={<WarehouseList />} />
+        <Route path="warehouses/create" element={<WarehouseDetails />} />
+        <Route path="warehouses/:id" element={<WarehouseDetails />} />
+        <Route path="serial-numbers" element={<SerialNumberList />} />
+        <Route path="batches" element={<BatchList />} />
+        <Route path="quotes" element={<QuoteList />} />
+        <Route path="returns" element={<ReturnList />} />
+        <Route path="invoices" element={<InvoiceList />} />
+        <Route path="users" element={<UserList />} />
+        <Route path="audit-logs" element={<AuditLogList />} />
+        <Route path="shipping" element={<ShippingList />} />
         <Route path="inventory" element={<Inventory />} />
         <Route path="purchases" element={<PurchaseList />} />
         <Route path="sales" element={<SaleList />} />

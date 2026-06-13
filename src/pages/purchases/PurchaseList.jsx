@@ -80,6 +80,30 @@ export default function PurchaseList() {
     }
   };
 
+  const handleApprove = async (id) => {
+    try {
+      await purchasesApi.approve(id);
+      addToast({ title: 'Purchase approved', type: 'success' });
+      refresh();
+      reload();
+    } catch (err) {
+      addToast({ title: err.message, type: 'error' });
+    }
+  };
+
+  const handleReject = async (id) => {
+    const reason = prompt('Enter rejection reason:');
+    if (reason === null) return;
+    try {
+      await purchasesApi.reject(id, reason);
+      addToast({ title: 'Purchase rejected', type: 'success' });
+      refresh();
+      reload();
+    } catch (err) {
+      addToast({ title: err.message, type: 'error' });
+    }
+  };
+
   const columns = [
     { key: 'id', title: 'PO #', render: (row) => `#${row.id}` },
     { key: 'supplierName', title: 'Supplier' },
@@ -87,9 +111,20 @@ export default function PurchaseList() {
     { key: 'status', title: 'Status', render: (row) => (
       <Badge variant={purchaseStatusVariant[row.status]}>{row.status}</Badge>
     ) },
+    { key: 'approvalStatus', title: 'Approval', render: (row) => (
+      <Badge variant={row.approvalStatus === 'approved' ? 'success' : row.approvalStatus === 'rejected' ? 'danger' : 'warning'}>
+        {row.approvalStatus || 'pending'}
+      </Badge>
+    ) },
     { key: 'expectedDate', title: 'Expected', render: (row) => formatDate(row.expectedDate) },
     { key: 'actions', title: 'Actions', render: (row) => (
       <div className="flex gap-2">
+        {row.approvalStatus === 'pending' && (
+          <>
+            <button type="button" onClick={() => handleApprove(row.id)} className="text-green-600 hover:underline text-sm">Approve</button>
+            <button type="button" onClick={() => handleReject(row.id)} className="text-red-600 hover:underline text-sm">Reject</button>
+          </>
+        )}
         <button type="button" onClick={() => setDetailItem(row)} className="text-primary hover:underline text-sm">View</button>
         <button type="button" onClick={() => setDeleteId(row.id)} className="text-red-600 hover:underline text-sm">Delete</button>
       </div>

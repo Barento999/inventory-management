@@ -156,11 +156,12 @@ export const categoriesApi = {
 
 // Products
 export const productsApi = {
-  list: withStoreRead((store, { search = '', categoryId, status, page = 1, pageSize = 10 } = {}) => {
+  list: withStoreRead((store, { search = '', categoryId, status, warehouseId, page = 1, pageSize = 10 } = {}) => {
     let items = store.products.map((p) => enrichProduct(p, store.categories));
     if (categoryId) items = items.filter((p) => p.categoryId === Number(categoryId));
     if (status) items = items.filter((p) => p.status === status);
-    items = filterBySearch(items, search, ['name', 'sku', 'category']);
+    if (warehouseId) items = items.filter((p) => p.warehouseId === Number(warehouseId));
+    items = filterBySearch(items, search, ['name', 'sku', 'category', 'barcode']);
     return paginate(items, page, pageSize);
   }),
 
@@ -175,6 +176,7 @@ export const productsApi = {
       id: getNextId(store, 'product'),
       name: data.name,
       sku: data.sku,
+      barcode: data.barcode || '',
       categoryId: Number(data.categoryId),
       price: Number(data.price),
       cost: Number(data.cost || 0),
@@ -183,6 +185,11 @@ export const productsApi = {
       status: data.status || 'Active',
       image: data.image || `https://via.placeholder.com/80/6366F1/FFFFFF?text=${encodeURIComponent(data.sku?.slice(0, 2) || 'PR')}`,
       description: data.description || '',
+      trackSerial: data.trackSerial || false,
+      trackExpiration: data.trackExpiration || false,
+      expirationDays: data.expirationDays || null,
+      warehouseId: Number(data.warehouseId || 1),
+      variants: data.variants || [],
     };
     store.products.push(product);
     if (product.stock > 0) {
@@ -203,6 +210,7 @@ export const productsApi = {
     Object.assign(product, {
       name: data.name,
       sku: data.sku,
+      barcode: data.barcode || product.barcode,
       categoryId: Number(data.categoryId),
       price: Number(data.price),
       cost: Number(data.cost || 0),
@@ -210,6 +218,11 @@ export const productsApi = {
       status: data.status || 'Active',
       image: data.image || product.image,
       description: data.description || '',
+      trackSerial: data.trackSerial !== undefined ? data.trackSerial : product.trackSerial,
+      trackExpiration: data.trackExpiration !== undefined ? data.trackExpiration : product.trackExpiration,
+      expirationDays: data.expirationDays !== undefined ? data.expirationDays : product.expirationDays,
+      warehouseId: Number(data.warehouseId || product.warehouseId),
+      variants: data.variants || product.variants,
     });
     checkLowStock(store, product);
     return enrichProduct(product, store.categories);
@@ -377,6 +390,7 @@ export const purchasesApi = {
       id: getNextId(store, 'purchase'),
       supplierId: Number(data.supplierId),
       status: data.status || 'draft',
+      approvalStatus: data.approvalStatus || 'pending',
       items: data.items.map((i) => ({
         productId: Number(i.productId),
         quantity: Number(i.quantity),
@@ -421,6 +435,38 @@ export const purchasesApi = {
     store.purchases = store.purchases.filter((p) => p.id !== Number(id));
     return { success: true };
   }),
+
+  approve: withStore((store, id) => {
+    const purchase = store.purchases.find((p) => p.id === Number(id));
+    if (!purchase) throw new Error('Purchase not found');
+    purchase.approvalStatus = 'approved';
+    purchase.status = 'ordered';
+    store.notifications.unshift({
+      id: getNextId(store, 'notification'),
+      type: 'purchase',
+      title: 'Purchase approved',
+      message: `Purchase #${purchase.id} has been approved`,
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
+    return enrichPurchase(purchase, store);
+  }),
+
+  reject: withStore((store, id, reason) => {
+    const purchase = store.purchases.find((p) => p.id === Number(id));
+    if (!purchase) throw new Error('Purchase not found');
+    purchase.approvalStatus = 'rejected';
+    purchase.notes = reason || purchase.notes;
+    store.notifications.unshift({
+      id: getNextId(store, 'notification'),
+      type: 'purchase',
+      title: 'Purchase rejected',
+      message: `Purchase #${purchase.id} has been rejected`,
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
+    return enrichPurchase(purchase, store);
+  }),
 };
 
 // Sales
@@ -451,6 +497,7 @@ export const salesApi = {
       })),
       createdAt: new Date().toISOString(),
       notes: data.notes || '',
+      shipping: data.shipping || null,
     };
     store.sales.unshift(sale);
     return enrichSale(sale, store);
@@ -477,6 +524,9 @@ export const salesApi = {
       });
     }
     sale.status = status;
+    if (status === 'delivered' && sale.shipping) {
+      sale.shipping.actualDelivery = new Date().toISOString().split('T')[0];
+    }
     store.notifications.unshift({
       id: getNextId(store, 'notification'),
       type: 'sale',
@@ -485,6 +535,13 @@ export const salesApi = {
       read: false,
       createdAt: new Date().toISOString(),
     });
+    return enrichSale(sale, store);
+  }),
+
+  updateShipping: withStore((store, id, shipping) => {
+    const sale = store.sales.find((s) => s.id === Number(id));
+    if (!sale) throw new Error('Sale not found');
+    sale.shipping = shipping;
     return enrichSale(sale, store);
   }),
 
@@ -624,3 +681,510 @@ export const productOptions = withStoreRead((store) =>
 export const categoryOptions = withStoreRead((store) =>
   store.categories.map((c) => ({ value: c.id, label: c.name }))
 );
+
+// Warehouses
+export const warehousesApi = {
+  list: withStoreRead((store) => store.warehouses),
+  get: withStoreRead((store, id) => {
+    const warehouse = store.warehouses.find((w) => w.id === Number(id));
+    if (!warehouse) throw new Error('Warehouse not found');
+    return warehouse;
+  }),
+  create: withStore((store, data) => {
+    const warehouse = {
+      id: getNextId(store, 'warehouse'),
+      name: data.name,
+      location: data.location,
+      isDefault: data.isDefault || false,
+    };
+    if (warehouse.isDefault) {
+      store.warehouses.forEach((w) => w.isDefault = false);
+    }
+    store.warehouses.push(warehouse);
+    return warehouse;
+  }),
+  update: withStore((store, id, data) => {
+    const warehouse = store.warehouses.find((w) => w.id === Number(id));
+    if (!warehouse) throw new Error('Warehouse not found');
+    Object.assign(warehouse, data);
+    if (warehouse.isDefault) {
+      store.warehouses.forEach((w) => w.id !== warehouse.id && (w.isDefault = false));
+    }
+    return warehouse;
+  }),
+  delete: withStore((store, id) => {
+    const warehouse = store.warehouses.find((w) => w.id === Number(id));
+    if (!warehouse) throw new Error('Warehouse not found');
+    if (warehouse.isDefault) throw new Error('Cannot delete default warehouse');
+    if (store.products.some((p) => p.warehouseId === warehouse.id)) {
+      throw new Error('Cannot delete warehouse with assigned products');
+    }
+    store.warehouses = store.warehouses.filter((w) => w.id !== Number(id));
+    return { success: true };
+  }),
+  options: withStoreRead((store) =>
+    store.warehouses.map((w) => ({ value: w.id, label: w.name }))
+  ),
+};
+
+// Serial Numbers
+export const serialNumbersApi = {
+  list: withStoreRead((store, { productId, status, page = 1, pageSize = 10 } = {}) => {
+    let items = store.serialNumbers.map((sn) => {
+      const product = store.products.find((p) => p.id === sn.productId);
+      const warehouse = store.warehouses.find((w) => w.id === sn.warehouseId);
+      return {
+        ...sn,
+        productName: product?.name || 'Unknown',
+        warehouseName: warehouse?.name || 'Unknown',
+      };
+    });
+    if (productId) items = items.filter((sn) => sn.productId === Number(productId));
+    if (status) items = items.filter((sn) => sn.status === status);
+    return paginate(items, page, pageSize);
+  }),
+  create: withStore((store, data) => {
+    const serial = {
+      id: getNextId(store, 'serialNumber'),
+      productId: Number(data.productId),
+      serialNumber: data.serialNumber,
+      status: data.status || 'in_stock',
+      purchaseDate: data.purchaseDate || new Date().toISOString().split('T')[0],
+      warehouseId: Number(data.warehouseId || 1),
+      saleId: data.saleId || null,
+    };
+    if (store.serialNumbers.some((s) => s.serialNumber === serial.serialNumber)) {
+      throw new Error('Serial number already exists');
+    }
+    store.serialNumbers.push(serial);
+    return serial;
+  }),
+  update: withStore((store, id, data) => {
+    const serial = store.serialNumbers.find((s) => s.id === Number(id));
+    if (!serial) throw new Error('Serial number not found');
+    Object.assign(serial, data);
+    return serial;
+  }),
+  delete: withStore((store, id) => {
+    store.serialNumbers = store.serialNumbers.filter((s) => s.id !== Number(id));
+    return { success: true };
+  }),
+};
+
+// Batches
+export const batchesApi = {
+  list: withStoreRead((store, { productId, status, page = 1, pageSize = 10 } = {}) => {
+    let items = store.batches.map((b) => {
+      const product = store.products.find((p) => p.id === b.productId);
+      const warehouse = store.warehouses.find((w) => w.id === b.warehouseId);
+      return {
+        ...b,
+        productName: product?.name || 'Unknown',
+        warehouseName: warehouse?.name || 'Unknown',
+      };
+    });
+    if (productId) items = items.filter((b) => b.productId === Number(productId));
+    if (status) items = items.filter((b) => b.status === status);
+    return paginate(items, page, pageSize);
+  }),
+  create: withStore((store, data) => {
+    const batch = {
+      id: getNextId(store, 'batch'),
+      productId: Number(data.productId),
+      batchNumber: data.batchNumber,
+      quantity: Number(data.quantity),
+      expirationDate: data.expirationDate,
+      warehouseId: Number(data.warehouseId || 1),
+      status: data.status || 'in_stock',
+    };
+    if (store.batches.some((b) => b.batchNumber === batch.batchNumber)) {
+      throw new Error('Batch number already exists');
+    }
+    store.batches.push(batch);
+    return batch;
+  }),
+  update: withStore((store, id, data) => {
+    const batch = store.batches.find((b) => b.id === Number(id));
+    if (!batch) throw new Error('Batch not found');
+    Object.assign(batch, data);
+    return batch;
+  }),
+  delete: withStore((store, id) => {
+    store.batches = store.batches.filter((b) => b.id !== Number(id));
+    return { success: true };
+  }),
+};
+
+// Quotes
+export const quotesApi = {
+  list: withStoreRead((store, { status, page = 1, pageSize = 10 } = {}) => {
+    let items = store.quotes.map((q) => {
+      const customer = store.customers.find((c) => c.id === q.customerId);
+      const items = q.items.map((item) => {
+        const product = store.products.find((p) => p.id === item.productId);
+        return {
+          ...item,
+          productName: product?.name || 'Unknown',
+          lineTotal: item.quantity * item.unitPrice,
+        };
+      });
+      return {
+        ...q,
+        customerName: customer?.name || 'Unknown',
+        items,
+        total: items.reduce((sum, i) => sum + i.lineTotal, 0),
+      };
+    });
+    if (status) items = items.filter((q) => q.status === status);
+    items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return paginate(items, page, pageSize);
+  }),
+  get: withStoreRead((store, id) => {
+    const quote = store.quotes.find((q) => q.id === Number(id));
+    if (!quote) throw new Error('Quote not found');
+    const customer = store.customers.find((c) => c.id === quote.customerId);
+    const items = quote.items.map((item) => {
+      const product = store.products.find((p) => p.id === item.productId);
+      return {
+        ...item,
+        productName: product?.name || 'Unknown',
+        lineTotal: item.quantity * item.unitPrice,
+      };
+    });
+    return {
+      ...quote,
+      customerName: customer?.name || 'Unknown',
+      items,
+      total: items.reduce((sum, i) => sum + i.lineTotal, 0),
+    };
+  }),
+  create: withStore((store, data) => {
+    const quote = {
+      id: getNextId(store, 'quote'),
+      customerId: Number(data.customerId),
+      status: data.status || 'draft',
+      items: data.items.map((i) => ({
+        productId: Number(i.productId),
+        quantity: Number(i.quantity),
+        unitPrice: Number(i.unitPrice),
+      })),
+      validUntil: data.validUntil || '',
+      createdAt: new Date().toISOString(),
+      notes: data.notes || '',
+    };
+    store.quotes.unshift(quote);
+    return quote;
+  }),
+  update: withStore((store, id, data) => {
+    const quote = store.quotes.find((q) => q.id === Number(id));
+    if (!quote) throw new Error('Quote not found');
+    Object.assign(quote, {
+      status: data.status || quote.status,
+      items: data.items?.map((i) => ({
+        productId: Number(i.productId),
+        quantity: Number(i.quantity),
+        unitPrice: Number(i.unitPrice),
+      })) || quote.items,
+      validUntil: data.validUntil || quote.validUntil,
+      notes: data.notes !== undefined ? data.notes : quote.notes,
+    });
+    return quote;
+  }),
+  convertToSale: withStore((store, id) => {
+    const quote = store.quotes.find((q) => q.id === Number(id));
+    if (!quote) throw new Error('Quote not found');
+    const sale = {
+      id: getNextId(store, 'sale'),
+      customerId: quote.customerId,
+      status: 'draft',
+      items: quote.items,
+      createdAt: new Date().toISOString(),
+      notes: `Converted from quote #${quote.id}`,
+    };
+    store.sales.unshift(sale);
+    quote.status = 'converted';
+    return sale;
+  }),
+  delete: withStore((store, id) => {
+    store.quotes = store.quotes.filter((q) => q.id !== Number(id));
+    return { success: true };
+  }),
+};
+
+// Returns
+export const returnsApi = {
+  list: withStoreRead((store, { status, page = 1, pageSize = 10 } = {}) => {
+    let items = store.returns.map((r) => {
+      const customer = store.customers.find((c) => c.id === r.customerId);
+      const sale = store.sales.find((s) => s.id === r.saleId);
+      return {
+        ...r,
+        customerName: customer?.name || 'Unknown',
+        saleId: r.saleId,
+      };
+    });
+    if (status) items = items.filter((r) => r.status === status);
+    items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return paginate(items, page, pageSize);
+  }),
+  get: withStoreRead((store, id) => {
+    const returnRecord = store.returns.find((r) => r.id === Number(id));
+    if (!returnRecord) throw new Error('Return not found');
+    const customer = store.customers.find((c) => c.id === returnRecord.customerId);
+    const items = returnRecord.items.map((item) => {
+      const product = store.products.find((p) => p.id === item.productId);
+      return {
+        ...item,
+        productName: product?.name || 'Unknown',
+      };
+    });
+    return {
+      ...returnRecord,
+      customerName: customer?.name || 'Unknown',
+      items,
+    };
+  }),
+  create: withStore((store, data) => {
+    const returnRecord = {
+      id: getNextId(store, 'return'),
+      saleId: Number(data.saleId),
+      customerId: Number(data.customerId),
+      status: data.status || 'pending',
+      items: data.items.map((i) => ({
+        productId: Number(i.productId),
+        quantity: Number(i.quantity),
+        reason: i.reason,
+      })),
+      refundAmount: Number(data.refundAmount || 0),
+      createdAt: new Date().toISOString(),
+      notes: data.notes || '',
+    };
+    store.returns.unshift(returnRecord);
+    return returnRecord;
+  }),
+  update: withStore((store, id, data) => {
+    const returnRecord = store.returns.find((r) => r.id === Number(id));
+    if (!returnRecord) throw new Error('Return not found');
+    const prevStatus = returnRecord.status;
+    Object.assign(returnRecord, {
+      status: data.status || returnRecord.status,
+      refundAmount: data.refundAmount !== undefined ? Number(data.refundAmount) : returnRecord.refundAmount,
+      notes: data.notes !== undefined ? data.notes : returnRecord.notes,
+    });
+    if (data.status === 'approved' && prevStatus !== 'approved') {
+      returnRecord.items.forEach((item) => {
+        recordMovement(store, {
+          type: 'in',
+          productId: item.productId,
+          quantity: item.quantity,
+          reason: `Return #${returnRecord.id} approved`,
+          reference: `RET-${returnRecord.id}`,
+        });
+      });
+    }
+    return returnRecord;
+  }),
+  delete: withStore((store, id) => {
+    store.returns = store.returns.filter((r) => r.id !== Number(id));
+    return { success: true };
+  }),
+};
+
+// Invoices
+export const invoicesApi = {
+  list: withStoreRead((store, { status, page = 1, pageSize = 10 } = {}) => {
+    let items = store.invoices.map((inv) => {
+      const customer = store.customers.find((c) => c.id === inv.customerId);
+      const sale = store.sales.find((s) => s.id === inv.saleId);
+      return {
+        ...inv,
+        customerName: customer?.name || 'Unknown',
+        saleId: inv.saleId,
+      };
+    });
+    if (status) items = items.filter((inv) => inv.status === status);
+    items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return paginate(items, page, pageSize);
+  }),
+  get: withStoreRead((store, id) => {
+    const invoice = store.invoices.find((inv) => inv.id === Number(id));
+    if (!invoice) throw new Error('Invoice not found');
+    const customer = store.customers.find((c) => c.id === invoice.customerId);
+    const sale = store.sales.find((s) => s.id === invoice.saleId);
+    const items = sale?.items?.map((item) => {
+      const product = store.products.find((p) => p.id === item.productId);
+      return {
+        ...item,
+        productName: product?.name || 'Unknown',
+        lineTotal: item.quantity * item.unitPrice,
+      };
+    }) || [];
+    return {
+      ...invoice,
+      customerName: customer?.name || 'Unknown',
+      items,
+    };
+  }),
+  create: withStore((store, data) => {
+    const invoice = {
+      id: getNextId(store, 'invoice'),
+      saleId: Number(data.saleId),
+      customerId: Number(data.customerId),
+      status: data.status || 'pending',
+      total: Number(data.total),
+      dueDate: data.dueDate || '',
+      paidDate: data.paidDate || null,
+      createdAt: new Date().toISOString(),
+      notes: data.notes || '',
+    };
+    store.invoices.unshift(invoice);
+    return invoice;
+  }),
+  update: withStore((store, id, data) => {
+    const invoice = store.invoices.find((inv) => inv.id === Number(id));
+    if (!invoice) throw new Error('Invoice not found');
+    Object.assign(invoice, {
+      status: data.status || invoice.status,
+      total: data.total !== undefined ? Number(data.total) : invoice.total,
+      dueDate: data.dueDate || invoice.dueDate,
+      paidDate: data.paidDate !== undefined ? data.paidDate : invoice.paidDate,
+      notes: data.notes !== undefined ? data.notes : invoice.notes,
+    });
+    return invoice;
+  }),
+  markAsPaid: withStore((store, id) => {
+    const invoice = store.invoices.find((inv) => inv.id === Number(id));
+    if (!invoice) throw new Error('Invoice not found');
+    invoice.status = 'paid';
+    invoice.paidDate = new Date().toISOString().split('T')[0];
+    return invoice;
+  }),
+  delete: withStore((store, id) => {
+    store.invoices = store.invoices.filter((inv) => inv.id !== Number(id));
+    return { success: true };
+  }),
+};
+
+// Users & RBAC
+export const usersApi = {
+  list: withStoreRead((store) => {
+    return store.users.map((u) => ({
+      ...u,
+      password: undefined,
+    }));
+  }),
+  get: withStoreRead((store, id) => {
+    const user = store.users.find((u) => u.id === Number(id));
+    if (!user) throw new Error('User not found');
+    const { password, ...safe } = user;
+    return safe;
+  }),
+  create: withStore((store, data) => {
+    if (store.users.some((u) => u.email === data.email)) {
+      throw new Error('Email already registered');
+    }
+    const user = {
+      id: getNextId(store, 'user'),
+      email: data.email,
+      password: data.password,
+      name: data.name,
+      role: data.role || 'staff',
+      company: data.company || store.settings.companyName,
+      permissions: data.permissions || [],
+      status: data.status || 'active',
+    };
+    store.users.push(user);
+    const { password: _, ...safe } = user;
+    return safe;
+  }),
+  update: withStore((store, id, data) => {
+    const user = store.users.find((u) => u.id === Number(id));
+    if (!user) throw new Error('User not found');
+    Object.assign(user, {
+      name: data.name || user.name,
+      role: data.role || user.role,
+      permissions: data.permissions || user.permissions,
+      status: data.status !== undefined ? data.status : user.status,
+    });
+    if (data.password) user.password = data.password;
+    const { password, ...safe } = user;
+    return safe;
+  }),
+  delete: withStore((store, id) => {
+    const user = store.users.find((u) => u.id === Number(id));
+    if (!user) throw new Error('User not found');
+    if (user.role === 'admin' && store.users.filter((u) => u.role === 'admin').length === 1) {
+      throw new Error('Cannot delete the last admin user');
+    }
+    store.users = store.users.filter((u) => u.id !== Number(id));
+    return { success: true };
+  }),
+};
+
+export const rolesApi = {
+  list: withStoreRead((store) => store.roles),
+  get: withStoreRead((store, id) => {
+    const role = store.roles.find((r) => r.id === Number(id));
+    if (!role) throw new Error('Role not found');
+    return role;
+  }),
+  create: withStore((store, data) => {
+    const role = {
+      id: getNextId(store, 'role'),
+      name: data.name,
+      description: data.description || '',
+      permissions: data.permissions || [],
+    };
+    store.roles.push(role);
+    return role;
+  }),
+  update: withStore((store, id, data) => {
+    const role = store.roles.find((r) => r.id === Number(id));
+    if (!role) throw new Error('Role not found');
+    Object.assign(role, {
+      name: data.name || role.name,
+      description: data.description !== undefined ? data.description : role.description,
+      permissions: data.permissions || role.permissions,
+    });
+    return role;
+  }),
+  delete: withStore((store, id) => {
+    const role = store.roles.find((r) => r.id === Number(id));
+    if (!role) throw new Error('Role not found');
+    if (store.users.some((u) => u.role === role.name.toLowerCase())) {
+      throw new Error('Cannot delete role with assigned users');
+    }
+    store.roles = store.roles.filter((r) => r.id !== Number(id));
+    return { success: true };
+  }),
+};
+
+export const auditLogsApi = {
+  list: withStoreRead((store, { userId, action, entity, page = 1, pageSize = 20 } = {}) => {
+    let items = store.auditLogs.map((log) => {
+      const user = store.users.find((u) => u.id === log.userId);
+      return {
+        ...log,
+        userName: user?.name || 'Unknown',
+      };
+    });
+    if (userId) items = items.filter((log) => log.userId === Number(userId));
+    if (action) items = items.filter((log) => log.action === action);
+    if (entity) items = items.filter((log) => log.entity === entity);
+    items.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    return paginate(items, page, pageSize);
+  }),
+  create: withStore((store, data) => {
+    const log = {
+      id: getNextId(store, 'auditLog'),
+      userId: Number(data.userId),
+      action: data.action,
+      entity: data.entity,
+      entityId: Number(data.entityId),
+      details: data.details || '',
+      timestamp: new Date().toISOString(),
+    };
+    store.auditLogs.unshift(log);
+    return log;
+  }),
+};
