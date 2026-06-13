@@ -6,12 +6,12 @@ import AppRoutes from './routes';
 
 export default function App() {
   return (
-    <AuthProvider>
+    <ToastProvider>
       <ThemeProvider>
-        <ToastProvider>
+        <AuthProvider>
           <AppRoutes />
-        </ToastProvider>
+        </AuthProvider>
       </ThemeProvider>
-    </AuthProvider>
+    </ToastProvider>
   );
 }
