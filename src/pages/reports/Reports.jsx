@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Table from '../../components/ui/Table';
 import Loader from '../../components/ui/Loader';
@@ -11,6 +12,8 @@ import { useToast } from '../../context/ToastContext';
 import { formatCurrency } from '../../utils/format';
 import { BarChart, XAxis, YAxis, Tooltip, ResponsiveContainer, Bar } from 'recharts';
 import { Download, FileSpreadsheet } from 'lucide-react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 export default function Reports() {
   const { version } = useDataRefresh();
@@ -40,9 +43,31 @@ export default function Reports() {
     addToast({ title: 'CSV exported successfully', type: 'success' });
   };
 
-  const exportToPDF = (data, filename) => {
-    addToast({ title: 'PDF export started', type: 'success' });
-    // PDF generation would be implemented with a library like jsPDF
+  const exportToPDF = (data, filename, title) => {
+    if (!data || data.length === 0) {
+      addToast({ title: 'No data to export', type: 'error' });
+      return;
+    }
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text(title, 14, 22);
+    doc.setFontSize(11);
+    doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 30);
+
+    const headers = Object.keys(data[0]);
+    const rows = data.map(row => Object.values(row));
+
+    doc.autoTable({
+      startY: 40,
+      head: [headers],
+      body: rows,
+      theme: 'grid',
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [99, 102, 241] },
+    });
+
+    doc.save(`${filename}.pdf`);
+    addToast({ title: 'PDF exported successfully', type: 'success' });
   };
 
   const topColumns = [
@@ -79,6 +104,9 @@ export default function Reports() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Reports & Analytics</h2>
+        <Link to="/reports/custom">
+          <Button variant="secondary">Custom Report Builder</Button>
+        </Link>
       </div>
 
       <div className="flex gap-2 flex-wrap border-b border-gray-200 dark:border-gray-700">
@@ -98,7 +126,7 @@ export default function Reports() {
                 <Button variant="secondary" size="sm" onClick={() => exportToCSV(chartData, 'monthly-sales')}>
                   <FileSpreadsheet className="w-4 h-4 mr-1" /> Export CSV
                 </Button>
-                <Button variant="secondary" size="sm" onClick={() => exportToPDF(chartData, 'monthly-sales')}>
+                <Button variant="secondary" size="sm" onClick={() => exportToPDF(chartData, 'monthly-sales', 'Monthly Sales Report')}>
                   <Download className="w-4 h-4 mr-1" /> Export PDF
                 </Button>
               </div>
@@ -123,7 +151,7 @@ export default function Reports() {
                 <Button variant="secondary" size="sm" onClick={() => exportToCSV(topProducts, 'top-products')}>
                   <FileSpreadsheet className="w-4 h-4 mr-1" /> Export CSV
                 </Button>
-                <Button variant="secondary" size="sm" onClick={() => exportToPDF(topProducts, 'top-products')}>
+                <Button variant="secondary" size="sm" onClick={() => exportToPDF(topProducts, 'top-products', 'Top Selling Products Report')}>
                   <Download className="w-4 h-4 mr-1" /> Export PDF
                 </Button>
               </div>
@@ -141,7 +169,7 @@ export default function Reports() {
                 <Button variant="secondary" size="sm" onClick={() => exportToCSV(valuation, 'inventory-valuation')}>
                   <FileSpreadsheet className="w-4 h-4 mr-1" /> Export CSV
                 </Button>
-                <Button variant="secondary" size="sm" onClick={() => exportToPDF(valuation, 'inventory-valuation')}>
+                <Button variant="secondary" size="sm" onClick={() => exportToPDF(valuation, 'inventory-valuation', 'Inventory Valuation Report')}>
                   <Download className="w-4 h-4 mr-1" /> Export PDF
                 </Button>
               </div>
@@ -162,7 +190,7 @@ export default function Reports() {
                 <Button variant="secondary" size="sm" onClick={() => exportToCSV(lowStock, 'low-stock')}>
                   <FileSpreadsheet className="w-4 h-4 mr-1" /> Export CSV
                 </Button>
-                <Button variant="secondary" size="sm" onClick={() => exportToPDF(lowStock, 'low-stock')}>
+                <Button variant="secondary" size="sm" onClick={() => exportToPDF(lowStock, 'low-stock', 'Low Stock Report')}>
                   <Download className="w-4 h-4 mr-1" /> Export PDF
                 </Button>
               </div>

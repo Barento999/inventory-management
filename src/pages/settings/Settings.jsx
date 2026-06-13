@@ -119,6 +119,31 @@ export default function Settings() {
         </div>
       </Card>
 
+      <Card title="Two-Factor Authentication (2FA)">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">Enable 2FA</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Add an extra layer of security to your account</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                addToast({ title: '2FA setup would open here', type: 'info' });
+              }}
+              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+            >
+              Enable 2FA
+            </button>
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Status: <span className="font-medium text-gray-800 dark:text-gray-200">Not Enabled</span>
+            </p>
+          </div>
+        </div>
+      </Card>
+
       <Card title="Appearance">
         <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
           Current theme: <strong>{theme}</strong>

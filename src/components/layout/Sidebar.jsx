@@ -20,6 +20,7 @@ import {
   Shield,
   History,
   PackageCheck,
+  Building2,
 } from 'lucide-react';
 
 const navItems = [
@@ -31,6 +32,7 @@ const navItems = [
   { to: '/batches', label: 'Batches', icon: Layers },
   { to: '/inventory', label: 'Inventory', icon: Boxes },
   { to: '/suppliers', label: 'Suppliers', icon: Truck },
+  { to: '/vendors', label: 'Vendor Portal', icon: Building2 },
   { to: '/purchases', label: 'Purchases', icon: ShoppingCart },
   { to: '/sales', label: 'Sales', icon: Receipt },
   { to: '/quotes', label: 'Quotes', icon: FileText },

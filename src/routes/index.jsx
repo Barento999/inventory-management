@@ -16,6 +16,7 @@ import Inventory from '../pages/inventory/Inventory';
 import PurchaseList from '../pages/purchases/PurchaseList';
 import SaleList from '../pages/sales/SaleList';
 import Reports from '../pages/reports/Reports';
+import CustomReportBuilder from '../pages/reports/CustomReportBuilder';
 import Settings from '../pages/settings/Settings';
 import WarehouseList from '../pages/warehouses/WarehouseList';
 import WarehouseDetails from '../pages/warehouses/WarehouseDetails';
@@ -27,6 +28,7 @@ import InvoiceList from '../pages/invoices/InvoiceList';
 import UserList from '../pages/users/UserList';
 import AuditLogList from '../pages/audit-logs/AuditLogList';
 import ShippingList from '../pages/shipping/ShippingList';
+import VendorPortal from '../pages/vendors/VendorPortal';
 import { useAuth } from '../context/AuthContext';
 
 function RequireAuth({ children }) {
@@ -62,6 +64,7 @@ export default function AppRoutes() {
         <Route path="categories" element={<CategoryList />} />
         <Route path="categories/:id" element={<CategoryDetails />} />
         <Route path="suppliers" element={<SupplierList />} />
+        <Route path="vendors" element={<VendorPortal />} />
         <Route path="customers" element={<CustomerList />} />
         <Route path="warehouses" element={<WarehouseList />} />
         <Route path="warehouses/create" element={<WarehouseDetails />} />
@@ -78,6 +81,7 @@ export default function AppRoutes() {
         <Route path="purchases" element={<PurchaseList />} />
         <Route path="sales" element={<SaleList />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="reports/custom" element={<CustomReportBuilder />} />
         <Route path="settings" element={<Settings />} />
       </Route>
 
