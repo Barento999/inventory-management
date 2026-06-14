@@ -135,7 +135,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
           <h1 className="text-lg font-bold text-primary">InventoryPro</h1>
           <p className="text-xs text-gray-500">Inventory SaaS</p>
         </div>
-        <nav className="mt-4 pb-4 overflow-y-auto max-h-[calc(100vh-5rem)]">
+        <nav className="mt-4 pb-4 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-5rem)]">
           {navSections.map((section) => {
             const isOpen = openSections[section.id] || false;
             const hasLabel = section.label;
