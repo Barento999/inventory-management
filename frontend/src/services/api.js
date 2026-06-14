@@ -99,7 +99,7 @@ export const authApi = {
 // Categories
 export const categoriesApi = {
   list: async ({ search = '', page = 1, pageSize = 10 } = {}) => {
-    const params = new URLSearchParams({ search: String(search), page: String(page), pageSize: String(pageSize) });
+    const params = new URLSearchParams({ search: String(search), page: String(page), page_size: String(pageSize) });
     return apiClient.get(`/categories?${params.toString()}`);
   },
 
@@ -316,7 +316,9 @@ export const salesApi = {
 
 // Dashboard & Reports
 export const dashboardApi = {
-  summary: withStoreRead((store) => buildSummary(store)),
+  summary: async () => {
+    return apiClient.get('/dashboard/summary');
+  },
 };
 
 export const reportsApi = {
@@ -416,47 +418,30 @@ export const categoryOptions = withStoreRead((store) =>
 
 // Warehouses
 export const warehousesApi = {
-  list: withStoreRead((store) => store.warehouses),
-  get: withStoreRead((store, id) => {
-    const warehouse = store.warehouses.find((w) => w.id === Number(id));
-    if (!warehouse) throw new Error('Warehouse not found');
-    return warehouse;
-  }),
-  create: withStore((store, data) => {
-    const warehouse = {
-      id: getNextId(store, 'warehouse'),
-      name: data.name,
-      location: data.location,
-      isDefault: data.isDefault || false,
-    };
-    if (warehouse.isDefault) {
-      store.warehouses.forEach((w) => w.isDefault = false);
-    }
-    store.warehouses.push(warehouse);
-    return warehouse;
-  }),
-  update: withStore((store, id, data) => {
-    const warehouse = store.warehouses.find((w) => w.id === Number(id));
-    if (!warehouse) throw new Error('Warehouse not found');
-    Object.assign(warehouse, data);
-    if (warehouse.isDefault) {
-      store.warehouses.forEach((w) => w.id !== warehouse.id && (w.isDefault = false));
-    }
-    return warehouse;
-  }),
-  delete: withStore((store, id) => {
-    const warehouse = store.warehouses.find((w) => w.id === Number(id));
-    if (!warehouse) throw new Error('Warehouse not found');
-    if (warehouse.isDefault) throw new Error('Cannot delete default warehouse');
-    if (store.products.some((p) => p.warehouseId === warehouse.id)) {
-      throw new Error('Cannot delete warehouse with assigned products');
-    }
-    store.warehouses = store.warehouses.filter((w) => w.id !== Number(id));
-    return { success: true };
-  }),
-  options: withStoreRead((store) =>
-    store.warehouses.map((w) => ({ value: w.id, label: w.name }))
-  ),
+  list: async () => {
+    return apiClient.get('/warehouses');
+  },
+
+  get: async (id) => {
+    return apiClient.get(`/warehouses/${id}`);
+  },
+
+  create: async (data) => {
+    return apiClient.post('/warehouses', data);
+  },
+
+  update: async (id, data) => {
+    return apiClient.put(`/warehouses/${id}`, data);
+  },
+
+  delete: async (id) => {
+    return apiClient.delete(`/warehouses/${id}`);
+  },
+
+  options: async () => {
+    const result = await apiClient.get('/warehouses');
+    return result.map((w) => ({ value: w.id, label: w.name }));
+  },
 };
 
 // Serial Numbers
@@ -728,58 +713,25 @@ export const invoicesApi = {
 
 // Users & RBAC
 export const usersApi = {
-  list: withStoreRead((store) => {
-    return store.users.map((u) => ({
-      ...u,
-      password: undefined,
-    }));
-  }),
-  get: withStoreRead((store, id) => {
-    const user = store.users.find((u) => u.id === Number(id));
-    if (!user) throw new Error('User not found');
-    const { password, ...safe } = user;
-    return safe;
-  }),
-  create: withStore((store, data) => {
-    if (store.users.some((u) => u.email === data.email)) {
-      throw new Error('Email already registered');
-    }
-    const user = {
-      id: getNextId(store, 'user'),
-      email: data.email,
-      password: data.password,
-      name: data.name,
-      role: data.role || 'staff',
-      company: data.company || store.settings.companyName,
-      permissions: data.permissions || [],
-      status: data.status || 'active',
-    };
-    store.users.push(user);
-    const { password: _, ...safe } = user;
-    return safe;
-  }),
-  update: withStore((store, id, data) => {
-    const user = store.users.find((u) => u.id === Number(id));
-    if (!user) throw new Error('User not found');
-    Object.assign(user, {
-      name: data.name || user.name,
-      role: data.role || user.role,
-      permissions: data.permissions || user.permissions,
-      status: data.status !== undefined ? data.status : user.status,
-    });
-    if (data.password) user.password = data.password;
-    const { password, ...safe } = user;
-    return safe;
-  }),
-  delete: withStore((store, id) => {
-    const user = store.users.find((u) => u.id === Number(id));
-    if (!user) throw new Error('User not found');
-    if (user.role === 'admin' && store.users.filter((u) => u.role === 'admin').length === 1) {
-      throw new Error('Cannot delete the last admin user');
-    }
-    store.users = store.users.filter((u) => u.id !== Number(id));
-    return { success: true };
-  }),
+  list: async () => {
+    return apiClient.get('/users');
+  },
+
+  get: async (id) => {
+    return apiClient.get(`/users/${id}`);
+  },
+
+  create: async (data) => {
+    return apiClient.post('/users', data);
+  },
+
+  update: async (id, data) => {
+    return apiClient.put(`/users/${id}`, data);
+  },
+
+  delete: async (id) => {
+    return apiClient.delete(`/users/${id}`);
+  },
 };
 
 export const rolesApi = {

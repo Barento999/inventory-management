@@ -30,6 +30,18 @@ class PurchaseUpdate(BaseModel):
 class PurchaseSchema(PurchaseBase):
     id: int
 
+    @classmethod
+    def from_orm(cls, obj):
+        data = {
+            "id": obj.id,
+            "supplier_id": obj.supplier_id,
+            "total": obj.total,
+            "status": obj.status,
+            "expected_date": obj.expected_date.isoformat() if obj.expected_date else None,
+            "notes": obj.notes,
+        }
+        return cls(**data)
+
     class Config:
         from_attributes = True
 
