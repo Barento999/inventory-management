@@ -1,317 +1,131 @@
-import {
-  loadStore,
-  saveStore,
-  getNextId,
-  enrichProduct,
-  enrichPurchase,
-  enrichSale,
-  enrichMovement,
-} from './store';
-import { filterBySearch, paginate } from '../utils/format';
-
-function delay(ms = 200) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function withStore(fn) {
-  return async (...args) => {
-    await delay();
-    const store = loadStore();
-    const result = fn(store, ...args);
-    saveStore(store);
-    return result;
-  };
-}
-
-function withStoreRead(fn) {
-  return async (...args) => {
-    await delay(150);
-    const store = loadStore();
-    return fn(store, ...args);
-  };
-}
-
-function recordMovement(store, { type, productId, quantity, reason, reference }) {
-  const product = store.products.find((p) => p.id === productId);
-  if (!product) throw new Error('Product not found');
-  const previousStock = product.stock;
-  product.stock = Math.max(0, previousStock + quantity);
-  const movement = {
-    id: getNextId(store, 'stockMovement'),
-    type,
-    productId,
-    quantity,
-    previousStock,
-    newStock: product.stock,
-    reason,
-    reference,
-    createdAt: new Date().toISOString(),
-  };
-  store.stockMovements.unshift(movement);
-  checkLowStock(store, product);
-  return movement;
-}
-
-function checkLowStock(store, product) {
-  if (product.stock <= product.reorderLevel) {
-    const exists = store.notifications.some(
-      (n) => n.type === 'low_stock' && n.message.includes(product.name) && !n.read
-    );
-    if (!exists) {
-      store.notifications.unshift({
-        id: getNextId(store, 'notification'),
-        type: 'low_stock',
-        title: 'Low stock alert',
-        message: `${product.name} is below reorder level (${product.stock} / ${product.reorderLevel})`,
-        read: false,
-        createdAt: new Date().toISOString(),
-      });
-    }
-  }
-}
+import apiClient from './apiClient';
 
 // Auth
 export const authApi = {
-  login: withStoreRead((store, email, password) => {
-    const user = store.users.find((u) => u.email === email && u.password === password);
-    if (!user) throw new Error('Invalid email or password');
-    const { password: _, ...safe } = user;
-    return { ...safe, token: `mock-token-${user.id}` };
-  }),
-
-  register: withStore((store, data) => {
-    if (store.users.some((u) => u.email === data.email)) {
-      throw new Error('Email already registered');
-    }
-    const user = {
-      id: getNextId(store, 'user'),
-      email: data.email,
-      password: data.password,
-      name: data.fullName,
-      role: 'admin',
-      company: data.company,
-    };
-    store.users.push(user);
-    if (data.company) store.settings.companyName = data.company;
-    const { password: _, ...safe } = user;
-    return { ...safe, token: `mock-token-${user.id}` };
-  }),
-
-  forgotPassword: async (_email) => {
-    await delay();
-    return { message: 'If that email exists, a reset link has been sent.' };
+  login: async (email, password) => {
+    return apiClient.post('/auth/login', { email, password });
   },
 
-  resetPassword: async () => {
-    await delay();
-    return { message: 'Password reset successful' };
+  register: async (data) => {
+    return apiClient.post('/auth/register', data);
+  },
+
+  forgotPassword: async (email) => {
+    return apiClient.post('/auth/forgot-password', { email });
+  },
+
+  resetPassword: async (token, password) => {
+    return apiClient.post('/auth/reset-password', { token, password });
   },
 };
 
 // Categories
 export const categoriesApi = {
-  list: withStoreRead((store, { search = '', page = 1, pageSize = 10 } = {}) => {
-    let items = store.categories.map((c) => ({
-      ...c,
-      productCount: store.products.filter((p) => p.categoryId === c.id).length,
-    }));
-    items = filterBySearch(items, search, ['name', 'description']);
-    return paginate(items, page, pageSize);
-  }),
+  list: async ({ search = '', page = 1, pageSize = 10 } = {}) => {
+    const params = new URLSearchParams({ search: String(search), page: String(page), pageSize: String(pageSize) });
+    return apiClient.get(`/categories?${params.toString()}`);
+  },
 
-  get: withStoreRead((store, id) => {
-    const cat = store.categories.find((c) => c.id === Number(id));
-    if (!cat) throw new Error('Category not found');
-    return {
-      ...cat,
-      productCount: store.products.filter((p) => p.categoryId === cat.id).length,
-      products: store.products
-        .filter((p) => p.categoryId === cat.id)
-        .map((p) => enrichProduct(p, store.categories)),
-    };
-  }),
+  get: async (id) => {
+    return apiClient.get(`/categories/${id}`);
+  },
 
-  create: withStore((store, data) => {
-    const cat = { id: getNextId(store, 'category'), name: data.name, description: data.description || '' };
-    store.categories.push(cat);
-    return cat;
-  }),
+  create: async (data) => {
+    return apiClient.post('/categories', data);
+  },
 
-  update: withStore((store, id, data) => {
-    const cat = store.categories.find((c) => c.id === Number(id));
-    if (!cat) throw new Error('Category not found');
-    Object.assign(cat, { name: data.name, description: data.description || '' });
-    return cat;
-  }),
+  update: async (id, data) => {
+    return apiClient.put(`/categories/${id}`, data);
+  },
 
-  delete: withStore((store, id) => {
-    const numId = Number(id);
-    if (store.products.some((p) => p.categoryId === numId)) {
-      throw new Error('Cannot delete category with assigned products');
-    }
-    store.categories = store.categories.filter((c) => c.id !== numId);
-    return { success: true };
-  }),
+  delete: async (id) => {
+    return apiClient.delete(`/categories/${id}`);
+  },
 };
 
 // Products
 export const productsApi = {
-  list: withStoreRead((store, { search = '', categoryId, status, warehouseId, page = 1, pageSize = 10 } = {}) => {
-    let items = store.products.map((p) => enrichProduct(p, store.categories));
-    if (categoryId) items = items.filter((p) => p.categoryId === Number(categoryId));
-    if (status) items = items.filter((p) => p.status === status);
-    if (warehouseId) items = items.filter((p) => p.warehouseId === Number(warehouseId));
-    items = filterBySearch(items, search, ['name', 'sku', 'category', 'barcode']);
-    return paginate(items, page, pageSize);
-  }),
+  list: async ({ search = '', categoryId, status, warehouseId, page = 1, pageSize = 10 } = {}) => {
+    const params = new URLSearchParams({ search: String(search), page: String(page), pageSize: String(pageSize) });
+    if (categoryId) params.append('categoryId', categoryId);
+    if (status) params.append('status', status);
+    if (warehouseId) params.append('warehouseId', warehouseId);
+    return apiClient.get(`/products?${params.toString()}`);
+  },
 
-  get: withStoreRead((store, id) => {
-    const product = store.products.find((p) => p.id === Number(id));
-    if (!product) throw new Error('Product not found');
-    return enrichProduct(product, store.categories);
-  }),
+  get: async (id) => {
+    return apiClient.get(`/products/${id}`);
+  },
 
-  create: withStore((store, data) => {
-    const product = {
-      id: getNextId(store, 'product'),
-      name: data.name,
-      sku: data.sku,
-      barcode: data.barcode || '',
-      categoryId: Number(data.categoryId),
-      price: Number(data.price),
-      cost: Number(data.cost || 0),
-      stock: Number(data.stock || 0),
-      reorderLevel: Number(data.reorderLevel || 10),
-      status: data.status || 'Active',
-      image: data.image || `https://via.placeholder.com/80/6366F1/FFFFFF?text=${encodeURIComponent(data.sku?.slice(0, 2) || 'PR')}`,
-      description: data.description || '',
-      trackSerial: data.trackSerial || false,
-      trackExpiration: data.trackExpiration || false,
-      expirationDays: data.expirationDays || null,
-      warehouseId: Number(data.warehouseId || 1),
-      variants: data.variants || [],
-    };
-    store.products.push(product);
-    if (product.stock > 0) {
-      recordMovement(store, {
-        type: 'in',
-        productId: product.id,
-        quantity: product.stock,
-        reason: 'Initial stock',
-        reference: `PROD-${product.id}`,
-      });
-    }
-    return enrichProduct(product, store.categories);
-  }),
+  create: async (data) => {
+    return apiClient.post('/products', data);
+  },
 
-  update: withStore((store, id, data) => {
-    const product = store.products.find((p) => p.id === Number(id));
-    if (!product) throw new Error('Product not found');
-    Object.assign(product, {
-      name: data.name,
-      sku: data.sku,
-      barcode: data.barcode || product.barcode,
-      categoryId: Number(data.categoryId),
-      price: Number(data.price),
-      cost: Number(data.cost || 0),
-      reorderLevel: Number(data.reorderLevel || 10),
-      status: data.status || 'Active',
-      image: data.image || product.image,
-      description: data.description || '',
-      trackSerial: data.trackSerial !== undefined ? data.trackSerial : product.trackSerial,
-      trackExpiration: data.trackExpiration !== undefined ? data.trackExpiration : product.trackExpiration,
-      expirationDays: data.expirationDays !== undefined ? data.expirationDays : product.expirationDays,
-      warehouseId: Number(data.warehouseId || product.warehouseId),
-      variants: data.variants || product.variants,
-    });
-    checkLowStock(store, product);
-    return enrichProduct(product, store.categories);
-  }),
+  update: async (id, data) => {
+    return apiClient.put(`/products/${id}`, data);
+  },
 
-  delete: withStore((store, id) => {
-    store.products = store.products.filter((p) => p.id !== Number(id));
-    return { success: true };
-  }),
+  delete: async (id) => {
+    return apiClient.delete(`/products/${id}`);
+  },
 };
 
 // Suppliers
 export const suppliersApi = {
-  list: withStoreRead((store, { search = '', page = 1, pageSize = 10 } = {}) => {
-    let items = store.suppliers.map((s) => ({
-      ...s,
-      purchaseCount: store.purchases.filter((p) => p.supplierId === s.id).length,
-    }));
-    items = filterBySearch(items, search, ['name', 'email', 'contactPerson']);
-    return paginate(items, page, pageSize);
-  }),
+  list: async ({ search = '', page = 1, pageSize = 10 } = {}) => {
+    const params = new URLSearchParams({ search: String(search), page: String(page), pageSize: String(pageSize) });
+    return apiClient.get(`/suppliers?${params.toString()}`);
+  },
 
-  get: withStoreRead((store, id) => {
-    const supplier = store.suppliers.find((s) => s.id === Number(id));
-    if (!supplier) throw new Error('Supplier not found');
-    return supplier;
-  }),
+  get: async (id) => {
+    return apiClient.get(`/suppliers/${id}`);
+  },
 
-  create: withStore((store, data) => {
-    const supplier = { id: getNextId(store, 'supplier'), ...data };
-    store.suppliers.push(supplier);
-    return supplier;
-  }),
+  create: async (data) => {
+    return apiClient.post('/suppliers', data);
+  },
 
-  update: withStore((store, id, data) => {
-    const supplier = store.suppliers.find((s) => s.id === Number(id));
-    if (!supplier) throw new Error('Supplier not found');
-    Object.assign(supplier, data);
-    return supplier;
-  }),
+  update: async (id, data) => {
+    return apiClient.put(`/suppliers/${id}`, data);
+  },
 
-  delete: withStore((store, id) => {
-    store.suppliers = store.suppliers.filter((s) => s.id !== Number(id));
-    return { success: true };
-  }),
+  delete: async (id) => {
+    return apiClient.delete(`/suppliers/${id}`);
+  },
 
-  options: withStoreRead((store) =>
-    store.suppliers.map((s) => ({ value: s.id, label: s.name }))
-  ),
+  options: async () => {
+    const result = await apiClient.get('/suppliers');
+    return result.map((s) => ({ value: s.id, label: s.name }));
+  },
 };
 
 // Customers
 export const customersApi = {
-  list: withStoreRead((store, { search = '', page = 1, pageSize = 10 } = {}) => {
-    let items = store.customers.map((c) => ({
-      ...c,
-      orderCount: store.sales.filter((s) => s.customerId === c.id).length,
-    }));
-    items = filterBySearch(items, search, ['name', 'email', 'phone']);
-    return paginate(items, page, pageSize);
-  }),
+  list: async ({ search = '', page = 1, pageSize = 10 } = {}) => {
+    const params = new URLSearchParams({ search: String(search), page: String(page), pageSize: String(pageSize) });
+    return apiClient.get(`/customers?${params.toString()}`);
+  },
 
-  get: withStoreRead((store, id) => {
-    const customer = store.customers.find((c) => c.id === Number(id));
-    if (!customer) throw new Error('Customer not found');
-    return customer;
-  }),
+  get: async (id) => {
+    return apiClient.get(`/customers/${id}`);
+  },
 
-  create: withStore((store, data) => {
-    const customer = { id: getNextId(store, 'customer'), ...data };
-    store.customers.push(customer);
-    return customer;
-  }),
+  create: async (data) => {
+    return apiClient.post('/customers', data);
+  },
 
-  update: withStore((store, id, data) => {
-    const customer = store.customers.find((c) => c.id === Number(id));
-    if (!customer) throw new Error('Customer not found');
-    Object.assign(customer, data);
-    return customer;
-  }),
+  update: async (id, data) => {
+    return apiClient.put(`/customers/${id}`, data);
+  },
 
-  delete: withStore((store, id) => {
-    store.customers = store.customers.filter((c) => c.id !== Number(id));
-    return { success: true };
-  }),
+  delete: async (id) => {
+    return apiClient.delete(`/customers/${id}`);
+  },
 
-  options: withStoreRead((store) =>
-    store.customers.map((c) => ({ value: c.id, label: c.name }))
-  ),
+  options: async () => {
+    const result = await apiClient.get('/customers');
+    return result.map((c) => ({ value: c.id, label: c.name }));
+  },
 };
 
 // Inventory
@@ -371,184 +185,56 @@ export const inventoryApi = {
 
 // Purchases
 export const purchasesApi = {
-  list: withStoreRead((store, { search = '', status, page = 1, pageSize = 10 } = {}) => {
-    let items = store.purchases.map((p) => enrichPurchase(p, store));
-    if (status) items = items.filter((p) => p.status === status);
-    items = filterBySearch(items, search, ['supplierName', 'notes']);
-    items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    return paginate(items, page, pageSize);
-  }),
+  list: async ({ search = '', status, page = 1, pageSize = 10 } = {}) => {
+    const params = new URLSearchParams({ search: String(search), page: String(page), pageSize: String(pageSize) });
+    if (status) params.append('status', status);
+    return apiClient.get(`/purchases?${params.toString()}`);
+  },
 
-  get: withStoreRead((store, id) => {
-    const purchase = store.purchases.find((p) => p.id === Number(id));
-    if (!purchase) throw new Error('Purchase not found');
-    return enrichPurchase(purchase, store);
-  }),
+  get: async (id) => {
+    return apiClient.get(`/purchases/${id}`);
+  },
 
-  create: withStore((store, data) => {
-    const purchase = {
-      id: getNextId(store, 'purchase'),
-      supplierId: Number(data.supplierId),
-      status: data.status || 'draft',
-      approvalStatus: data.approvalStatus || 'pending',
-      items: data.items.map((i) => ({
-        productId: Number(i.productId),
-        quantity: Number(i.quantity),
-        unitCost: Number(i.unitCost),
-      })),
-      expectedDate: data.expectedDate || '',
-      createdAt: new Date().toISOString(),
-      notes: data.notes || '',
-    };
-    store.purchases.unshift(purchase);
-    return enrichPurchase(purchase, store);
-  }),
+  create: async (data) => {
+    return apiClient.post('/purchases', data);
+  },
 
-  updateStatus: withStore((store, id, status) => {
-    const purchase = store.purchases.find((p) => p.id === Number(id));
-    if (!purchase) throw new Error('Purchase not found');
-    const prev = purchase.status;
-    purchase.status = status;
-    if (status === 'received' && prev !== 'received') {
-      purchase.items.forEach((item) => {
-        recordMovement(store, {
-          type: 'in',
-          productId: item.productId,
-          quantity: item.quantity,
-          reason: `Purchase #${purchase.id} received`,
-          reference: `PO-${purchase.id}`,
-        });
-      });
-      store.notifications.unshift({
-        id: getNextId(store, 'notification'),
-        type: 'purchase',
-        title: 'Purchase received',
-        message: `Purchase #${purchase.id} marked as received`,
-        read: false,
-        createdAt: new Date().toISOString(),
-      });
-    }
-    return enrichPurchase(purchase, store);
-  }),
+  updateStatus: async (id, status) => {
+    return apiClient.put(`/purchases/${id}/status`, { status });
+  },
 
-  delete: withStore((store, id) => {
-    store.purchases = store.purchases.filter((p) => p.id !== Number(id));
-    return { success: true };
-  }),
+  delete: async (id) => {
+    return apiClient.delete(`/purchases/${id}`);
+  },
 
-  approve: withStore((store, id) => {
-    const purchase = store.purchases.find((p) => p.id === Number(id));
-    if (!purchase) throw new Error('Purchase not found');
-    purchase.approvalStatus = 'approved';
-    purchase.status = 'ordered';
-    store.notifications.unshift({
-      id: getNextId(store, 'notification'),
-      type: 'purchase',
-      title: 'Purchase approved',
-      message: `Purchase #${purchase.id} has been approved`,
-      read: false,
-      createdAt: new Date().toISOString(),
-    });
-    return enrichPurchase(purchase, store);
-  }),
-
-  reject: withStore((store, id, reason) => {
-    const purchase = store.purchases.find((p) => p.id === Number(id));
-    if (!purchase) throw new Error('Purchase not found');
-    purchase.approvalStatus = 'rejected';
-    purchase.notes = reason || purchase.notes;
-    store.notifications.unshift({
-      id: getNextId(store, 'notification'),
-      type: 'purchase',
-      title: 'Purchase rejected',
-      message: `Purchase #${purchase.id} has been rejected`,
-      read: false,
-      createdAt: new Date().toISOString(),
-    });
-    return enrichPurchase(purchase, store);
-  }),
+  approve: async (id) => {
+    return apiClient.put(`/purchases/${id}/approve`);
+  },
 };
 
 // Sales
 export const salesApi = {
-  list: withStoreRead((store, { search = '', status, page = 1, pageSize = 10 } = {}) => {
-    let items = store.sales.map((s) => enrichSale(s, store));
-    if (status) items = items.filter((s) => s.status === status);
-    items = filterBySearch(items, search, ['customerName', 'notes']);
-    items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    return paginate(items, page, pageSize);
-  }),
+  list: async ({ search = '', status, page = 1, pageSize = 10 } = {}) => {
+    const params = new URLSearchParams({ search: String(search), page: String(page), pageSize: String(pageSize) });
+    if (status) params.append('status', status);
+    return apiClient.get(`/sales?${params.toString()}`);
+  },
 
-  get: withStoreRead((store, id) => {
-    const sale = store.sales.find((s) => s.id === Number(id));
-    if (!sale) throw new Error('Sale not found');
-    return enrichSale(sale, store);
-  }),
+  get: async (id) => {
+    return apiClient.get(`/sales/${id}`);
+  },
 
-  create: withStore((store, data) => {
-    const sale = {
-      id: getNextId(store, 'sale'),
-      customerId: Number(data.customerId),
-      status: data.status || 'draft',
-      items: data.items.map((i) => ({
-        productId: Number(i.productId),
-        quantity: Number(i.quantity),
-        unitPrice: Number(i.unitPrice),
-      })),
-      createdAt: new Date().toISOString(),
-      notes: data.notes || '',
-      shipping: data.shipping || null,
-    };
-    store.sales.unshift(sale);
-    return enrichSale(sale, store);
-  }),
+  create: async (data) => {
+    return apiClient.post('/sales', data);
+  },
 
-  updateStatus: withStore((store, id, status) => {
-    const sale = store.sales.find((s) => s.id === Number(id));
-    if (!sale) throw new Error('Sale not found');
-    const prev = sale.status;
-    const deductStatuses = ['confirmed', 'shipped', 'delivered'];
-    if (deductStatuses.includes(status) && !deductStatuses.includes(prev)) {
-      sale.items.forEach((item) => {
-        const product = store.products.find((p) => p.id === item.productId);
-        if (product && product.stock < item.quantity) {
-          throw new Error(`Insufficient stock for ${product.name}`);
-        }
-        recordMovement(store, {
-          type: 'out',
-          productId: item.productId,
-          quantity: -item.quantity,
-          reason: `Sale #${sale.id} ${status}`,
-          reference: `SO-${sale.id}`,
-        });
-      });
-    }
-    sale.status = status;
-    if (status === 'delivered' && sale.shipping) {
-      sale.shipping.actualDelivery = new Date().toISOString().split('T')[0];
-    }
-    store.notifications.unshift({
-      id: getNextId(store, 'notification'),
-      type: 'sale',
-      title: 'Sale updated',
-      message: `Sale #${sale.id} status changed to ${status}`,
-      read: false,
-      createdAt: new Date().toISOString(),
-    });
-    return enrichSale(sale, store);
-  }),
+  updateStatus: async (id, status) => {
+    return apiClient.put(`/sales/${id}/status`, { status });
+  },
 
-  updateShipping: withStore((store, id, shipping) => {
-    const sale = store.sales.find((s) => s.id === Number(id));
-    if (!sale) throw new Error('Sale not found');
-    sale.shipping = shipping;
-    return enrichSale(sale, store);
-  }),
-
-  delete: withStore((store, id) => {
-    store.sales = store.sales.filter((s) => s.id !== Number(id));
-    return { success: true };
-  }),
+  delete: async (id) => {
+    return apiClient.delete(`/sales/${id}`);
+  },
 };
 
 function buildSummary(store) {
@@ -817,98 +503,27 @@ export const batchesApi = {
 
 // Quotes
 export const quotesApi = {
-  list: withStoreRead((store, { status, page = 1, pageSize = 10 } = {}) => {
-    let items = store.quotes.map((q) => {
-      const customer = store.customers.find((c) => c.id === q.customerId);
-      const items = q.items.map((item) => {
-        const product = store.products.find((p) => p.id === item.productId);
-        return {
-          ...item,
-          productName: product?.name || 'Unknown',
-          lineTotal: item.quantity * item.unitPrice,
-        };
-      });
-      return {
-        ...q,
-        customerName: customer?.name || 'Unknown',
-        items,
-        total: items.reduce((sum, i) => sum + i.lineTotal, 0),
-      };
-    });
-    if (status) items = items.filter((q) => q.status === status);
-    items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    return paginate(items, page, pageSize);
-  }),
-  get: withStoreRead((store, id) => {
-    const quote = store.quotes.find((q) => q.id === Number(id));
-    if (!quote) throw new Error('Quote not found');
-    const customer = store.customers.find((c) => c.id === quote.customerId);
-    const items = quote.items.map((item) => {
-      const product = store.products.find((p) => p.id === item.productId);
-      return {
-        ...item,
-        productName: product?.name || 'Unknown',
-        lineTotal: item.quantity * item.unitPrice,
-      };
-    });
-    return {
-      ...quote,
-      customerName: customer?.name || 'Unknown',
-      items,
-      total: items.reduce((sum, i) => sum + i.lineTotal, 0),
-    };
-  }),
-  create: withStore((store, data) => {
-    const quote = {
-      id: getNextId(store, 'quote'),
-      customerId: Number(data.customerId),
-      status: data.status || 'draft',
-      items: data.items.map((i) => ({
-        productId: Number(i.productId),
-        quantity: Number(i.quantity),
-        unitPrice: Number(i.unitPrice),
-      })),
-      validUntil: data.validUntil || '',
-      createdAt: new Date().toISOString(),
-      notes: data.notes || '',
-    };
-    store.quotes.unshift(quote);
-    return quote;
-  }),
-  update: withStore((store, id, data) => {
-    const quote = store.quotes.find((q) => q.id === Number(id));
-    if (!quote) throw new Error('Quote not found');
-    Object.assign(quote, {
-      status: data.status || quote.status,
-      items: data.items?.map((i) => ({
-        productId: Number(i.productId),
-        quantity: Number(i.quantity),
-        unitPrice: Number(i.unitPrice),
-      })) || quote.items,
-      validUntil: data.validUntil || quote.validUntil,
-      notes: data.notes !== undefined ? data.notes : quote.notes,
-    });
-    return quote;
-  }),
-  convertToSale: withStore((store, id) => {
-    const quote = store.quotes.find((q) => q.id === Number(id));
-    if (!quote) throw new Error('Quote not found');
-    const sale = {
-      id: getNextId(store, 'sale'),
-      customerId: quote.customerId,
-      status: 'draft',
-      items: quote.items,
-      createdAt: new Date().toISOString(),
-      notes: `Converted from quote #${quote.id}`,
-    };
-    store.sales.unshift(sale);
-    quote.status = 'converted';
-    return sale;
-  }),
-  delete: withStore((store, id) => {
-    store.quotes = store.quotes.filter((q) => q.id !== Number(id));
-    return { success: true };
-  }),
+  list: async ({ status, page = 1, pageSize = 10 } = {}) => {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (status) params.append('status', status);
+    return apiClient.get(`/quotes?${params.toString()}`);
+  },
+
+  get: async (id) => {
+    return apiClient.get(`/quotes/${id}`);
+  },
+
+  create: async (data) => {
+    return apiClient.post('/quotes', data);
+  },
+
+  updateStatus: async (id, status) => {
+    return apiClient.put(`/quotes/${id}/status`, { status });
+  },
+
+  delete: async (id) => {
+    return apiClient.delete(`/quotes/${id}`);
+  },
 };
 
 // Returns
