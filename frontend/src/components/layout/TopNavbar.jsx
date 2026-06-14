@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Bell, Moon, Sun, Menu, X } from 'lucide-react';
+import { Search, Moon, Sun, Menu, X } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { useApi } from '../../hooks/useApi';
-import { searchApi, notificationsApi } from '../../services/api';
+import { searchApi } from '../../services/api';
 import { useDataRefresh } from '../../context/DataRefreshContext';
-import { formatDateTime } from '../../utils/format';
+import NotificationCenter from '../ui/NotificationCenter';
 
 export default function TopNavbar({ onMenuToggle, mobileOpen }) {
   const { theme, toggleTheme } = useTheme();
@@ -22,12 +22,6 @@ export default function TopNavbar({ onMenuToggle, mobileOpen }) {
     () => (query.trim().length >= 2 ? searchApi.global(query) : Promise.resolve(null)),
     [query, version]
   );
-  const { data: notifications, reload: reloadNotif } = useApi(
-    () => notificationsApi.list(),
-    [version]
-  );
-
-  const unread = notifications?.filter((n) => !n.read).length || 0;
 
   useEffect(() => {
     const handler = (e) => {
@@ -36,12 +30,6 @@ export default function TopNavbar({ onMenuToggle, mobileOpen }) {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
-
-  const markAllRead = async () => {
-    await notificationsApi.markAllRead();
-    reloadNotif();
-    refresh();
-  };
 
   const renderResults = () => {
     if (!results || !query.trim()) return null;
@@ -100,43 +88,7 @@ export default function TopNavbar({ onMenuToggle, mobileOpen }) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4">
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setNotifOpen(!notifOpen)}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 relative"
-            aria-label="Notifications"
-          >
-            <Bell className="w-5 h-5" />
-            {unread > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
-                {unread}
-              </span>
-            )}
-          </button>
-          {notifOpen && (
-            <div className="absolute right-0 top-full mt-1 w-80 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-md shadow-lg z-50">
-              <div className="flex justify-between items-center px-3 py-2 border-b dark:border-gray-700">
-                <span className="text-sm font-semibold">Notifications</span>
-                {unread > 0 && (
-                  <button type="button" onClick={markAllRead} className="text-xs text-primary hover:underline">Mark all read</button>
-                )}
-              </div>
-              <div className="max-h-64 overflow-y-auto">
-                {notifications?.length ? notifications.slice(0, 8).map((n) => (
-                  <div key={n.id} className={`px-3 py-2 border-b dark:border-gray-700 text-sm ${n.read ? 'opacity-60' : ''}`}>
-                    <p className="font-medium">{n.title}</p>
-                    <p className="text-gray-500 text-xs">{n.message}</p>
-                    <p className="text-gray-400 text-xs mt-1">{formatDateTime(n.createdAt)}</p>
-                  </div>
-                )) : (
-                  <p className="p-3 text-sm text-gray-500">No notifications</p>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
+        <NotificationCenter />
         <button type="button" onClick={toggleTheme} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Toggle theme">
           {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         </button>

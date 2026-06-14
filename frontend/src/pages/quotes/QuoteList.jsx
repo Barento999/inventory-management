@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Table from '../../components/ui/Table';
 import Loader from '../../components/ui/Loader';
+import EmptyState from '../../components/ui/EmptyState';
 import Badge from '../../components/ui/Badge';
 import Pagination from '../../components/ui/Pagination';
 import Select from '../../components/ui/Select';
@@ -103,13 +104,23 @@ export default function QuoteList() {
       <Card>
         {loading ? <Loader /> : (
           <>
-            <Table columns={columns} data={result?.data || []} />
-            {result?.pagination?.totalPages > 1 && (
-              <Pagination
-                current={result.pagination.page}
-                total={result.pagination.totalPages}
-                onPageChange={setPage}
-              />
+            {result?.data?.length === 0 ? (
+              <EmptyState type="documents" action={
+                <Link to="/quotes/create">
+                  <Button>Create Quote</Button>
+                </Link>
+              } />
+            ) : (
+              <>
+                <Table columns={columns} data={result?.data || []} />
+                {result?.pagination?.totalPages > 1 && (
+                  <Pagination
+                    current={result.pagination.page}
+                    total={result.pagination.totalPages}
+                    onPageChange={setPage}
+                  />
+                )}
+              </>
             )}
           </>
         )}

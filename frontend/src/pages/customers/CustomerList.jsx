@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import Card from '../../components/ui/Card';
 import Table from '../../components/ui/Table';
 import Loader from '../../components/ui/Loader';
+import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
@@ -97,9 +98,15 @@ export default function CustomerList() {
       <Card>
         {loading ? <Loader /> : (
           <>
-            <Table columns={columns} data={result?.data || []} />
-            {result?.pagination?.totalPages > 1 && (
-              <Pagination current={result.pagination.page} total={result.pagination.totalPages} onPageChange={setPage} />
+            {result?.data?.length === 0 ? (
+              <EmptyState type="customers" action={<Button onClick={openCreate}>Add Customer</Button>} />
+            ) : (
+              <>
+                <Table columns={columns} data={result?.data || []} />
+                {result?.pagination?.totalPages > 1 && (
+                  <Pagination current={result.pagination.page} total={result.pagination.totalPages} onPageChange={setPage} />
+                )}
+              </>
             )}
           </>
         )}

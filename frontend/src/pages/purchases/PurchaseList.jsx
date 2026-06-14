@@ -3,6 +3,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import Card from '../../components/ui/Card';
 import Table from '../../components/ui/Table';
 import Loader from '../../components/ui/Loader';
+import EmptyState from '../../components/ui/EmptyState';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
@@ -159,9 +160,15 @@ export default function PurchaseList() {
       <Card>
         {loading ? <Loader /> : (
           <>
-            <Table columns={columns} data={result?.data || []} />
-            {result?.pagination?.totalPages > 1 && (
-              <Pagination current={result.pagination.page} total={result.pagination.totalPages} onPageChange={setPage} />
+            {result?.data?.length === 0 ? (
+              <EmptyState type="default" action={<Button onClick={() => setCreateOpen(true)}>New Purchase</Button>} />
+            ) : (
+              <>
+                <Table columns={columns} data={result?.data || []} />
+                {result?.pagination?.totalPages > 1 && (
+                  <Pagination current={result.pagination.page} total={result.pagination.totalPages} onPageChange={setPage} />
+                )}
+              </>
             )}
           </>
         )}

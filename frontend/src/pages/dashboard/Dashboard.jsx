@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Card from '../../components/ui/Card';
-import Loader from '../../components/ui/Loader';
+import LoadingSkeleton from '../../components/ui/LoadingSkeleton';
 import Badge from '../../components/ui/Badge';
 import Table from '../../components/ui/Table';
 import Button from '../../components/ui/Button';
@@ -61,7 +61,7 @@ export default function Dashboard() {
     addToast({ title: 'Dashboard layout reset', type: 'success' });
   };
 
-  if (loading || !stats) return <Loader className="py-12" />;
+  if (loading || !stats) return <LoadingSkeleton type="stats" />;
 
   const movementColumns = [
     { key: 'type', title: 'Type', render: (row) => (
