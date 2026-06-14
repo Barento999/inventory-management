@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.core.database import db
+from app.core.database import init_db
 from app.api import api_router
 
 app = FastAPI(title="Inventory Management API", version="1.0.0")
@@ -17,18 +17,12 @@ app.add_middleware(
 # Initialize database
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database connection on startup"""
+    """Initialize database on startup"""
     try:
-        db.connect()
-        db.create_tables()
-        print("✅ Database initialized")
+        init_db()
+        print("✅ Database initialized with SQLAlchemy")
     except Exception as e:
         print(f"❌ Database initialization failed: {e}")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Close database connection on shutdown"""
-    db.disconnect()
 
 app.include_router(api_router, prefix="/api")
 

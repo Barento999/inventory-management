@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Optional
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.models import Purchase
 
 router = APIRouter()
 
@@ -9,121 +11,94 @@ router = APIRouter()
 class PurchaseBase(BaseModel):
     supplier_id: int
     total: float
-    status: str
+    status: str = "draft"
     expected_date: Optional[str] = None
     notes: Optional[str] = None
 
 
-class Purchase(PurchaseBase):
+class PurchaseCreate(PurchaseBase):
+    pass
+
+
+class PurchaseUpdate(BaseModel):
+    total: Optional[float] = None
+    status: Optional[str] = None
+    expected_date: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class PurchaseSchema(PurchaseBase):
     id: int
 
     class Config:
         from_attributes = True
 
 
-@router.get("/", response_model=List[dict])
+@router.get("/", response_model=List[PurchaseSchema])
 async def list_purchases(
     search: Optional[str] = None,
     status: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
-    db = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """List all purchases"""
-    try:
-        query = """
-        SELECT p.*, s.name as supplier_name 
-        FROM purchases p 
-        LEFT JOIN suppliers s ON p.supplier_id = s.id
-        WHERE 1=1
-        """
-        params = []
-        
-        if status:
-            query += " AND p.status = %s"
-            params.append(status)
-        
-        if search:
-            query += " AND (s.name ILIKE %s OR p.notes ILIKE %s)"
-            params.extend([f"%{search}%", f"%{search}%"])
-        
-        offset = (page - 1) * page_size
-        query += f" ORDER BY p.created_at DESC LIMIT {page_size} OFFSET {offset}"
-        
-        purchases = db.fetch_all(query, params if params else None)
-        return purchases or []
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    query = db.query(Purchase)
+    
+    if status:
+        query = query.filter(Purchase.status == status)
+    
+    offset = (page - 1) * page_size
+    purchases = query.order_by(Purchase.created_at.desc()).offset(offset).limit(page_size).all()
+    return purchases
 
 
-@router.get("/{purchase_id}", response_model=dict)
-async def get_purchase(purchase_id: int, db = Depends(get_db)):
+@router.get("/{purchase_id}", response_model=PurchaseSchema)
+async def get_purchase(purchase_id: int, db: Session = Depends(get_db)):
     """Get a specific purchase"""
-    try:
-        purchase = db.fetch_one("SELECT * FROM purchases WHERE id = %s", (purchase_id,))
-        if not purchase:
-            raise HTTPException(status_code=404, detail="Purchase not found")
-        return purchase
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    purchase = db.query(Purchase).filter(Purchase.id == purchase_id).first()
+    if not purchase:
+        raise HTTPException(status_code=404, detail="Purchase not found")
+    return purchase
 
 
-@router.post("/", response_model=dict)
-async def create_purchase(purchase: PurchaseBase, db = Depends(get_db)):
+@router.post("/", response_model=PurchaseSchema)
+async def create_purchase(purchase: PurchaseCreate, db: Session = Depends(get_db)):
     """Create a new purchase"""
-    try:
-        query = """
-        INSERT INTO purchases (supplier_id, total, status, expected_date, notes, user_id)
-        VALUES (%s, %s, %s, %s, %s, (SELECT id FROM users LIMIT 1))
-        RETURNING *
-        """
-        result = db.fetch_one(
-            query, 
-            (purchase.supplier_id, purchase.total, purchase.status, purchase.expected_date, purchase.notes)
-        )
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    db_purchase = Purchase(**purchase.dict())
+    db.add(db_purchase)
+    db.commit()
+    db.refresh(db_purchase)
+    return db_purchase
 
 
-@router.put("/{purchase_id}", response_model=dict)
-async def update_purchase(purchase_id: int, purchase: PurchaseBase, db = Depends(get_db)):
+@router.put("/{purchase_id}", response_model=PurchaseSchema)
+async def update_purchase(
+    purchase_id: int, 
+    purchase: PurchaseUpdate, 
+    db: Session = Depends(get_db)
+):
     """Update a purchase"""
-    try:
-        existing = db.fetch_one("SELECT id FROM purchases WHERE id = %s", (purchase_id,))
-        if not existing:
-            raise HTTPException(status_code=404, detail="Purchase not found")
-        
-        query = """
-        UPDATE purchases 
-        SET supplier_id = %s, total = %s, status = %s, expected_date = %s, notes = %s
-        WHERE id = %s 
-        RETURNING *
-        """
-        result = db.fetch_one(
-            query, 
-            (purchase.supplier_id, purchase.total, purchase.status, purchase.expected_date, purchase.notes, purchase_id)
-        )
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    db_purchase = db.query(Purchase).filter(Purchase.id == purchase_id).first()
+    if not db_purchase:
+        raise HTTPException(status_code=404, detail="Purchase not found")
+    
+    update_data = purchase.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_purchase, key, value)
+    
+    db.commit()
+    db.refresh(db_purchase)
+    return db_purchase
 
 
 @router.delete("/{purchase_id}")
-async def delete_purchase(purchase_id: int, db = Depends(get_db)):
+async def delete_purchase(purchase_id: int, db: Session = Depends(get_db)):
     """Delete a purchase"""
-    try:
-        existing = db.fetch_one("SELECT id FROM purchases WHERE id = %s", (purchase_id,))
-        if not existing:
-            raise HTTPException(status_code=404, detail="Purchase not found")
-        
-        db.execute("DELETE FROM purchases WHERE id = %s", (purchase_id,))
-        return {"message": "Purchase deleted successfully"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    db_purchase = db.query(Purchase).filter(Purchase.id == purchase_id).first()
+    if not db_purchase:
+        raise HTTPException(status_code=404, detail="Purchase not found")
+    
+    db.delete(db_purchase)
+    db.commit()
+    return {"message": "Purchase deleted successfully"}
