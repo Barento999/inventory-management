@@ -1,147 +1,129 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Optional
 from pydantic import BaseModel
-from datetime import datetime
 from app.core.database import get_db
 
 router = APIRouter()
 
 
-class QuoteItem(BaseModel):
-    productId: str
-    quantity: int
-    unitPrice: float
-
-
 class QuoteBase(BaseModel):
-    customerId: str
-    items: List[QuoteItem]
+    customer_id: int
+    total: float
     status: str
-    validUntil: Optional[str] = None
-    notes: Optional[str] = None
-
-
-class QuoteCreate(QuoteBase):
-    pass
-
-
-class QuoteUpdate(BaseModel):
-    status: Optional[str] = None
+    valid_until: Optional[str] = None
     notes: Optional[str] = None
 
 
 class Quote(QuoteBase):
-    id: str
-    customerName: str
-    total: float
-    createdAt: datetime
+    id: int
 
     class Config:
         from_attributes = True
 
 
-@router.get("/", response_model=List[Quote])
+@router.get("/", response_model=List[dict])
 async def list_quotes(
     search: Optional[str] = None,
     status: Optional[str] = None,
     page: int = 1,
-    pageSize: int = 10,
+    page_size: int = 10,
     db = Depends(get_db)
 ):
-    where = {}
-    if status:
-        where['status'] = status
-    if search:
-        where['OR'] = [
-            {'customerName': {'contains': search}},
-            {'notes': {'contains': search}},
-        ]
-    
-    skip = (page - 1) * pageSize
-    quotes = await db.quote.find_many(
-        where=where,
-        skip=skip,
-        take=pageSize,
-        order={'createdAt': 'desc'},
-        include={'customer': True}
-    )
-    
-    result = []
-    for quote in quotes:
-        total = sum(item.quantity * item.unitPrice for item in quote.items)
-        result.append({
-            **quote.model_dump(),
-            'customerName': quote.customer.name,
-            'total': total
-        })
-    return result
+    """List all quotes"""
+    try:
+        query = """
+        SELECT q.*, c.name as customer_name 
+        FROM quotes q 
+        LEFT JOIN customers c ON q.customer_id = c.id
+        WHERE 1=1
+        """
+        params = []
+        
+        if status:
+            query += " AND q.status = %s"
+            params.append(status)
+        
+        if search:
+            query += " AND (c.name ILIKE %s OR q.notes ILIKE %s)"
+            params.extend([f"%{search}%", f"%{search}%"])
+        
+        offset = (page - 1) * page_size
+        query += f" ORDER BY q.created_at DESC LIMIT {page_size} OFFSET {offset}"
+        
+        quotes = db.fetch_all(query, params if params else None)
+        return quotes or []
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{quote_id}", response_model=Quote)
-async def get_quote(quote_id: str, db = Depends(get_db)):
-    quote = await db.quote.find_unique(
-        where={'id': quote_id},
-        include={'customer': True}
-    )
-    if not quote:
-        raise HTTPException(status_code=404, detail="Quote not found")
-    
-    total = sum(item.quantity * item.unitPrice for item in quote.items)
-    return {
-        **quote.model_dump(),
-        'customerName': quote.customer.name,
-        'total': total
-    }
+@router.get("/{quote_id}", response_model=dict)
+async def get_quote(quote_id: int, db = Depends(get_db)):
+    """Get a specific quote"""
+    try:
+        quote = db.fetch_one("SELECT * FROM quotes WHERE id = %s", (quote_id,))
+        if not quote:
+            raise HTTPException(status_code=404, detail="Quote not found")
+        return quote
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/", response_model=Quote)
-async def create_quote(quote: QuoteCreate, db = Depends(get_db)):
-    customer = await db.customer.find_unique(where={'id': quote.customerId})
-    if not customer:
-        raise HTTPException(status_code=404, detail="Customer not found")
-    
-    total = sum(item.quantity * item.unitPrice for item in quote.items)
-    
-    new_quote = await db.quote.create(
-        data={
-            'customerId': quote.customerId,
-            'status': quote.status,
-            'validUntil': quote.validUntil,
-            'notes': quote.notes,
-            'items': {
-                'create': [
-                    {
-                        'productId': item.productId,
-                        'quantity': item.quantity,
-                        'unitPrice': item.unitPrice,
-                    }
-                    for item in quote.items
-                ]
-            }
-        }
-    )
-    
-    return {
-        **new_quote.model_dump(),
-        'customerName': customer.name,
-        'total': total
-    }
+@router.post("/", response_model=dict)
+async def create_quote(quote: QuoteBase, db = Depends(get_db)):
+    """Create a new quote"""
+    try:
+        query = """
+        INSERT INTO quotes (customer_id, total, status, valid_until, notes)
+        VALUES (%s, %s, %s, %s, %s)
+        RETURNING *
+        """
+        result = db.fetch_one(
+            query, 
+            (quote.customer_id, quote.total, quote.status, quote.valid_until, quote.notes)
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/{quote_id}/status")
-async def update_quote_status(quote_id: str, status: str, db = Depends(get_db)):
-    quote = await db.quote.find_unique(where={'id': quote_id})
-    if not quote:
-        raise HTTPException(status_code=404, detail="Quote not found")
-    
-    await db.quote.update(
-        where={'id': quote_id},
-        data={'status': status}
-    )
-    return {"message": "Status updated"}
+@router.put("/{quote_id}", response_model=dict)
+async def update_quote(quote_id: int, quote: QuoteBase, db = Depends(get_db)):
+    """Update a quote"""
+    try:
+        existing = db.fetch_one("SELECT id FROM quotes WHERE id = %s", (quote_id,))
+        if not existing:
+            raise HTTPException(status_code=404, detail="Quote not found")
+        
+        query = """
+        UPDATE quotes 
+        SET customer_id = %s, total = %s, status = %s, valid_until = %s, notes = %s
+        WHERE id = %s 
+        RETURNING *
+        """
+        result = db.fetch_one(
+            query, 
+            (quote.customer_id, quote.total, quote.status, quote.valid_until, quote.notes, quote_id)
+        )
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/{quote_id}")
-async def delete_quote(quote_id: str, db = Depends(get_db)):
-    await db.quote.delete(where={'id': quote_id})
-    return {"message": "Quote deleted"}
+async def delete_quote(quote_id: int, db = Depends(get_db)):
+    """Delete a quote"""
+    try:
+        existing = db.fetch_one("SELECT id FROM quotes WHERE id = %s", (quote_id,))
+        if not existing:
+            raise HTTPException(status_code=404, detail="Quote not found")
+        
+        db.execute("DELETE FROM quotes WHERE id = %s", (quote_id,))
+        return {"message": "Quote deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
