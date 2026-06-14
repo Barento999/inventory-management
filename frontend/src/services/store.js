@@ -1,153 +1,20 @@
 const STORAGE_KEY = 'inventory_saas_data';
 
 const defaultData = {
-  categories: [
-    { id: 1, name: 'Electronics', description: 'Electronic devices and accessories' },
-    { id: 2, name: 'Office Supplies', description: 'Stationery and office equipment' },
-    { id: 3, name: 'Furniture', description: 'Office and warehouse furniture' },
-    { id: 4, name: 'Packaging', description: 'Boxes, labels, and shipping materials' },
-  ],
-  warehouses: [
-    { id: 1, name: 'Main Warehouse', location: '123 Industrial Blvd, Austin, TX', isDefault: true },
-    { id: 2, name: 'West Coast Storage', location: '456 Pacific Ave, Los Angeles, CA', isDefault: false },
-  ],
-  products: [
-    { id: 1, name: 'Wireless Mouse', sku: 'WM-001', barcode: '1234567890123', categoryId: 1, price: 29.99, cost: 15.0, stock: 120, reorderLevel: 20, status: 'Active', image: 'https://via.placeholder.com/80/6366F1/FFFFFF?text=WM', description: 'Ergonomic wireless mouse', trackSerial: false, trackExpiration: false, warehouseId: 1, variants: [] },
-    { id: 2, name: 'USB-C Hub', sku: 'UH-002', barcode: '1234567890124', categoryId: 1, price: 49.99, cost: 28.0, stock: 45, reorderLevel: 15, status: 'Active', image: 'https://via.placeholder.com/80/10B981/FFFFFF?text=UH', description: '7-in-1 USB-C hub', trackSerial: true, trackExpiration: false, warehouseId: 1, variants: [] },
-    { id: 3, name: 'A4 Paper Ream', sku: 'AP-003', barcode: '1234567890125', categoryId: 2, price: 8.99, cost: 4.5, stock: 200, reorderLevel: 50, status: 'Active', image: 'https://via.placeholder.com/80/F59E0B/FFFFFF?text=AP', description: '500 sheets premium A4 paper', trackSerial: false, trackExpiration: true, expirationDays: 365, warehouseId: 1, variants: [] },
-    { id: 4, name: 'Office Chair', sku: 'OC-004', barcode: '1234567890126', categoryId: 3, price: 249.99, cost: 140.0, stock: 18, reorderLevel: 5, status: 'Active', image: 'https://via.placeholder.com/80/EF4444/FFFFFF?text=OC', description: 'Adjustable ergonomic office chair', trackSerial: true, trackExpiration: false, warehouseId: 1, variants: [{ name: 'Color', options: ['Black', 'Gray', 'White'] }] },
-    { id: 5, name: 'Shipping Box (Medium)', sku: 'SB-005', barcode: '1234567890127', categoryId: 4, price: 2.49, cost: 0.8, stock: 8, reorderLevel: 25, status: 'Active', image: 'https://via.placeholder.com/80/8B5CF6/FFFFFF?text=SB', description: 'Medium corrugated shipping box', trackSerial: false, trackExpiration: false, warehouseId: 2, variants: [] },
-    { id: 6, name: 'Mechanical Keyboard', sku: 'MK-006', barcode: '1234567890128', categoryId: 1, price: 89.99, cost: 52.0, stock: 32, reorderLevel: 10, status: 'Active', image: 'https://via.placeholder.com/80/06B6D4/FFFFFF?text=MK', description: 'RGB mechanical keyboard', trackSerial: true, trackExpiration: false, warehouseId: 1, variants: [{ name: 'Switch', options: ['Blue', 'Brown', 'Red'] }, { name: 'Layout', options: ['ANSI', 'ISO'] }] },
-    { id: 7, name: 'Desk Lamp', sku: 'DL-007', barcode: '1234567890129', categoryId: 3, price: 39.99, cost: 18.0, stock: 0, reorderLevel: 8, status: 'Inactive', image: 'https://via.placeholder.com/80/64748B/FFFFFF?text=DL', description: 'LED desk lamp with dimmer', trackSerial: false, trackExpiration: false, warehouseId: 1, variants: [] },
-  ],
-  serialNumbers: [
-    { id: 1, productId: 2, serialNumber: 'SN-UH-001', status: 'in_stock', purchaseDate: '2026-01-15', warehouseId: 1 },
-    { id: 2, productId: 2, serialNumber: 'SN-UH-002', status: 'in_stock', purchaseDate: '2026-01-15', warehouseId: 1 },
-    { id: 3, productId: 4, serialNumber: 'SN-OC-001', status: 'sold', saleId: 1, purchaseDate: '2026-02-01', warehouseId: 1 },
-  ],
-  batches: [
-    { id: 1, productId: 3, batchNumber: 'B-AP-001', quantity: 200, expirationDate: '2027-01-15', warehouseId: 1, status: 'in_stock' },
-  ],
-  suppliers: [
-    { id: 1, name: 'TechSupply Co.', email: 'orders@techsupply.com', phone: '+1-555-0101', address: '123 Tech Park, Austin, TX', contactPerson: 'John Miller' },
-    { id: 2, name: 'Office Depot Wholesale', email: 'wholesale@officedepot.com', phone: '+1-555-0102', address: '456 Commerce Blvd, Dallas, TX', contactPerson: 'Sarah Chen' },
-    { id: 3, name: 'FurniPro Ltd', email: 'sales@furnipro.com', phone: '+1-555-0103', address: '789 Industrial Way, Houston, TX', contactPerson: 'Mike Roberts' },
-  ],
-  customers: [
-    { id: 1, name: 'Acme Corp', email: 'procurement@acme.com', phone: '+1-555-0201', address: '100 Business Ave, New York, NY' },
-    { id: 2, name: 'StartupHub Inc', email: 'orders@startuphub.io', phone: '+1-555-0202', address: '200 Innovation Dr, San Francisco, CA' },
-    { id: 3, name: 'Retail Plus', email: 'buying@retailplus.com', phone: '+1-555-0203', address: '300 Market St, Chicago, IL' },
-  ],
-  stockMovements: [
-    { id: 1, type: 'in', productId: 1, quantity: 50, reason: 'Initial stock', reference: 'INIT-001', createdAt: '2026-01-15T10:00:00Z' },
-    { id: 2, type: 'out', productId: 2, quantity: 5, reason: 'Sample shipment', reference: 'OUT-001', createdAt: '2026-02-01T14:30:00Z' },
-    { id: 3, type: 'adjustment', productId: 5, quantity: -2, reason: 'Damaged items', reference: 'ADJ-001', createdAt: '2026-03-10T09:15:00Z' },
-  ],
-  purchases: [
-    {
-      id: 1,
-      supplierId: 1,
-      status: 'received',
-      approvalStatus: 'approved',
-      items: [
-        { productId: 1, quantity: 50, unitCost: 15.0 },
-        { productId: 6, quantity: 20, unitCost: 52.0 },
-      ],
-      expectedDate: '2026-01-10',
-      createdAt: '2026-01-05T08:00:00Z',
-      notes: 'Q1 restock',
-    },
-    {
-      id: 2,
-      supplierId: 2,
-      status: 'ordered',
-      approvalStatus: 'pending',
-      items: [{ productId: 3, quantity: 100, unitCost: 4.5 }],
-      expectedDate: '2026-06-20',
-      createdAt: '2026-06-01T11:00:00Z',
-      notes: '',
-    },
-  ],
-  sales: [
-    {
-      id: 1,
-      customerId: 1,
-      status: 'delivered',
-      items: [
-        { productId: 1, quantity: 10, unitPrice: 29.99 },
-        { productId: 2, quantity: 5, unitPrice: 49.99 },
-      ],
-      createdAt: '2026-02-15T10:00:00Z',
-      notes: 'Bulk order',
-      shipping: {
-        carrier: 'FedEx',
-        trackingNumber: '1234567890123',
-        shippingAddress: '123 Main St, Austin, TX 78701',
-        shippingCost: 15.99,
-        estimatedDelivery: '2026-02-20',
-        actualDelivery: '2026-02-19',
-      },
-    },
-    {
-      id: 2,
-      customerId: 2,
-      status: 'confirmed',
-      items: [{ productId: 6, quantity: 3, unitPrice: 89.99 }],
-      createdAt: '2026-06-10T16:00:00Z',
-      notes: '',
-      shipping: {
-        carrier: 'UPS',
-        trackingNumber: '1Z999AA10123456784',
-        shippingAddress: '456 Tech Blvd, San Francisco, CA 94105',
-        shippingCost: 12.50,
-        estimatedDelivery: '2026-06-15',
-      },
-    },
-  ],
-  quotes: [
-    {
-      id: 1,
-      customerId: 1,
-      status: 'draft',
-      items: [
-        { productId: 1, quantity: 20, unitPrice: 29.99 },
-        { productId: 4, quantity: 5, unitPrice: 249.99 },
-      ],
-      validUntil: '2026-07-15',
-      createdAt: '2026-06-14T10:00:00Z',
-      notes: 'Quote for Q3 order',
-    },
-  ],
-  returns: [
-    {
-      id: 1,
-      saleId: 1,
-      customerId: 1,
-      status: 'pending',
-      items: [{ productId: 1, quantity: 2, reason: 'Defective' }],
-      refundAmount: 59.98,
-      createdAt: '2026-06-13T14:00:00Z',
-      notes: 'Customer reported defective items',
-    },
-  ],
-  invoices: [
-    {
-      id: 1,
-      saleId: 1,
-      customerId: 1,
-      status: 'paid',
-      total: 549.85,
-      dueDate: '2026-03-15',
-      paidDate: '2026-03-10',
-      createdAt: '2026-02-15T10:00:00Z',
-      notes: '',
-    },
-  ],
-  notifications: [
-    { id: 1, type: 'low_stock', title: 'Low stock alert', message: 'Shipping Box (Medium) is below reorder level (8 / 25)', read: false, createdAt: '2026-06-13T08:00:00Z' },
-    { id: 2, type: 'sale', title: 'New sale order', message: 'Sale #2 confirmed for StartupHub Inc', read: false, createdAt: '2026-06-10T16:05:00Z' },
-    { id: 3, type: 'purchase', title: 'Purchase ordered', message: 'Purchase #2 ordered from Office Depot Wholesale', read: true, createdAt: '2026-06-01T11:05:00Z' },
-  ],
+  categories: [],
+  warehouses: [],
+  products: [],
+  serialNumbers: [],
+  batches: [],
+  suppliers: [],
+  customers: [],
+  stockMovements: [],
+  purchases: [],
+  sales: [],
+  quotes: [],
+  returns: [],
+  invoices: [],
+  notifications: [],
   settings: {
     companyName: 'InventoryPro',
     email: 'admin@inventorypro.com',
@@ -158,40 +25,32 @@ const defaultData = {
     lowStockThreshold: 10,
     timezone: 'America/Chicago',
   },
-  users: [
-    { id: 1, email: 'admin@demo.com', password: 'admin123', name: 'Admin User', role: 'admin', company: 'InventoryPro', permissions: ['all'], status: 'active' },
-    { id: 2, email: 'manager@demo.com', password: 'manager123', name: 'Manager User', role: 'manager', company: 'InventoryPro', permissions: ['products', 'inventory', 'sales', 'purchases', 'reports'], status: 'active' },
-    { id: 3, email: 'staff@demo.com', password: 'staff123', name: 'Staff User', role: 'staff', company: 'InventoryPro', permissions: ['products', 'inventory'], status: 'active' },
-  ],
+  users: [],
   roles: [
     { id: 1, name: 'Admin', description: 'Full system access', permissions: ['all'] },
     { id: 2, name: 'Manager', description: 'Manage inventory and sales', permissions: ['products', 'inventory', 'sales', 'purchases', 'reports'] },
     { id: 3, name: 'Staff', description: 'View and edit products', permissions: ['products', 'inventory'] },
     { id: 4, name: 'Viewer', description: 'Read-only access', permissions: ['view'] },
   ],
-  auditLogs: [
-    { id: 1, userId: 1, action: 'create', entity: 'product', entityId: 1, details: 'Created product: Wireless Mouse', timestamp: '2026-01-15T10:00:00Z' },
-    { id: 2, userId: 2, action: 'update', entity: 'product', entityId: 2, details: 'Updated product: USB-C Hub', timestamp: '2026-06-10T14:30:00Z' },
-    { id: 3, userId: 1, action: 'delete', entity: 'category', entityId: 5, details: 'Deleted category: Old Category', timestamp: '2026-06-13T09:00:00Z' },
-  ],
+  auditLogs: [],
   nextIds: {
-    category: 5,
-    product: 8,
-    supplier: 4,
-    customer: 4,
-    stockMovement: 4,
-    purchase: 3,
-    sale: 3,
-    notification: 4,
-    user: 4,
-    warehouse: 3,
-    serialNumber: 4,
-    batch: 2,
-    quote: 2,
-    return: 2,
-    invoice: 2,
+    category: 1,
+    product: 1,
+    supplier: 1,
+    customer: 1,
+    stockMovement: 1,
+    purchase: 1,
+    sale: 1,
+    notification: 1,
+    user: 1,
+    warehouse: 1,
+    serialNumber: 1,
+    batch: 1,
+    quote: 1,
+    return: 1,
+    invoice: 1,
     role: 5,
-    auditLog: 4,
+    auditLog: 1,
   },
 };
 
@@ -242,61 +101,14 @@ function enrichMovement(movement, store) {
 }
 
 export function loadStore() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (raw) {
-    try {
-      const data = JSON.parse(raw);
-      // Merge new arrays from defaultData if they don't exist in loaded data
-      const arraysToMerge = ['warehouses', 'serialNumbers', 'batches', 'quotes', 'returns', 'invoices', 'roles', 'auditLogs'];
-      arraysToMerge.forEach((key) => {
-        if (!data[key] || data[key].length === 0) {
-          data[key] = structuredClone(defaultData[key]);
-        }
-      });
-      // Merge new nextIds if they don't exist
-      const idsToMerge = ['warehouse', 'serialNumber', 'batch', 'quote', 'return', 'invoice', 'role', 'auditLog'];
-      idsToMerge.forEach((key) => {
-        if (!data.nextIds[key]) {
-          data.nextIds[key] = defaultData.nextIds[key];
-        }
-      });
-      // Merge new product fields if they don't exist
-      data.products = data.products.map((p) => ({
-        ...p,
-        barcode: p.barcode || '',
-        trackSerial: p.trackSerial || false,
-        trackExpiration: p.trackExpiration || false,
-        expirationDays: p.expirationDays || null,
-        warehouseId: p.warehouseId || 1,
-        variants: p.variants || [],
-      }));
-      // Merge new purchase fields if they don't exist
-      data.purchases = data.purchases.map((p) => ({
-        ...p,
-        approvalStatus: p.approvalStatus || 'pending',
-      }));
-      // Merge new sale fields if they don't exist
-      data.sales = data.sales.map((s) => ({
-        ...s,
-        shipping: s.shipping || null,
-      }));
-      // Merge new user fields if they don't exist
-      data.users = data.users.map((u) => ({
-        ...u,
-        permissions: u.permissions || [],
-        status: u.status || 'active',
-      }));
-      return data;
-    } catch {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultData));
-  return structuredClone(defaultData);
+  // Always start fresh - no localStorage persistence
+  const data = structuredClone(defaultData);
+  return data;
 }
 
 export function saveStore(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  // No-op - all data comes from backend
+  // Data is stored in memory only during the session
 }
 
 export function getNextId(store, key) {
@@ -306,6 +118,7 @@ export function getNextId(store, key) {
 }
 
 export function resetStore() {
+  // Clear any stored data
   localStorage.removeItem(STORAGE_KEY);
   return loadStore();
 }

@@ -3,7 +3,6 @@ from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 from app.core.database import get_db
-from prisma import Prisma
 
 router = APIRouter()
 
@@ -47,7 +46,7 @@ async def list_purchases(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    db: Prisma = Depends(get_db)
+    db = Depends(get_db)
 ):
     where = {}
     if status:
@@ -79,7 +78,7 @@ async def list_purchases(
 
 
 @router.get("/{purchase_id}", response_model=Purchase)
-async def get_purchase(purchase_id: str, db: Prisma = Depends(get_db)):
+async def get_purchase(purchase_id: str, db = Depends(get_db)):
     purchase = await db.purchase.find_unique(
         where={'id': purchase_id},
         include={'supplier': True}
@@ -96,7 +95,7 @@ async def get_purchase(purchase_id: str, db: Prisma = Depends(get_db)):
 
 
 @router.post("/", response_model=Purchase)
-async def create_purchase(purchase: PurchaseCreate, db: Prisma = Depends(get_db)):
+async def create_purchase(purchase: PurchaseCreate, db = Depends(get_db)):
     supplier = await db.supplier.find_unique(where={'id': purchase.supplierId})
     if not supplier:
         raise HTTPException(status_code=404, detail="Supplier not found")
@@ -130,7 +129,7 @@ async def create_purchase(purchase: PurchaseCreate, db: Prisma = Depends(get_db)
 
 
 @router.put("/{purchase_id}/approve")
-async def approve_purchase(purchase_id: str, db: Prisma = Depends(get_db)):
+async def approve_purchase(purchase_id: str, db = Depends(get_db)):
     purchase = await db.purchase.find_unique(where={'id': purchase_id})
     if not purchase:
         raise HTTPException(status_code=404, detail="Purchase not found")
@@ -143,6 +142,6 @@ async def approve_purchase(purchase_id: str, db: Prisma = Depends(get_db)):
 
 
 @router.delete("/{purchase_id}")
-async def delete_purchase(purchase_id: str, db: Prisma = Depends(get_db)):
+async def delete_purchase(purchase_id: str, db = Depends(get_db)):
     await db.purchase.delete(where={'id': purchase_id})
     return {"message": "Purchase deleted"}

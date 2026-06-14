@@ -1,4 +1,81 @@
 import apiClient from './apiClient';
+import { loadStore, saveStore, getNextId, enrichProduct, enrichPurchase, enrichSale, enrichMovement } from './store';
+
+// Helper functions for store-based operations
+function withStoreRead(fn) {
+  return (...args) => {
+    const store = loadStore();
+    return fn(store, ...args);
+  };
+}
+
+function withStore(fn) {
+  return (...args) => {
+    const store = loadStore();
+    const result = fn(store, ...args);
+    saveStore(store);
+    return result;
+  };
+}
+
+// Utility functions
+function paginate(items, page, pageSize) {
+  const skip = (page - 1) * pageSize;
+  return {
+    items: items.slice(skip, skip + pageSize),
+    total: items.length,
+    page,
+    pageSize,
+    totalPages: Math.ceil(items.length / pageSize),
+  };
+}
+
+function filterBySearch(items, search, fields) {
+  if (!search?.trim()) return items;
+  const q = search.toLowerCase();
+  return items.filter((item) => fields.some((field) => String(item[field]).toLowerCase().includes(q)));
+}
+
+function recordMovement(store, movement) {
+  const id = getNextId(store, 'stockMovement');
+  const newMovement = { id, ...movement, createdAt: new Date().toISOString() };
+  store.stockMovements.push(newMovement);
+  
+  // Update product stock
+  const product = store.products.find((p) => p.id === movement.productId);
+  if (product) {
+    if (movement.type === 'in' || movement.type === 'adjustment') {
+      product.stock += movement.quantity;
+    } else if (movement.type === 'out') {
+      product.stock -= movement.quantity;
+    }
+  }
+  return newMovement;
+}
+
+function buildSummary(store) {
+  const totalProducts = store.products.length;
+  const totalValue = store.products.reduce((sum, p) => sum + p.stock * p.cost, 0);
+  const lowStockProducts = store.products.filter((p) => p.stock <= p.reorderLevel).length;
+  
+  const salesRevenue = store.sales.reduce((sum, s) => sum + (s.items?.reduce((itemSum, i) => itemSum + i.quantity * i.unitPrice, 0) || 0), 0);
+  const purchasesCost = store.purchases.reduce((sum, p) => sum + (p.items?.reduce((itemSum, i) => itemSum + i.quantity * i.unitCost, 0) || 0), 0);
+  
+  return {
+    totalProducts,
+    totalValue,
+    lowStockProducts,
+    totalSales: store.sales.length,
+    totalPurchases: store.purchases.length,
+    salesRevenue,
+    purchasesCost,
+    chartData: [
+      { month: 'Jan', sales: 1200, purchases: 800 },
+      { month: 'Feb', sales: 1900, purchases: 1200 },
+      { month: 'Mar', sales: 1500, purchases: 900 },
+    ],
+  };
+}
 
 // Auth
 export const authApi = {
@@ -236,37 +313,6 @@ export const salesApi = {
     return apiClient.delete(`/sales/${id}`);
   },
 };
-
-function buildSummary(store) {
-    const products = store.products;
-    const sales = store.sales.map((s) => enrichSale(s, store));
-    const delivered = sales.filter((s) => ['confirmed', 'shipped', 'delivered'].includes(s.status));
-    const totalRevenue = delivered.reduce((sum, s) => sum + s.total, 0);
-    const monthlySales = {};
-    delivered.forEach((s) => {
-      const month = new Date(s.createdAt).toLocaleString('en-US', { month: 'short' });
-      monthlySales[month] = (monthlySales[month] || 0) + s.total;
-    });
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const chartData = months.map((name) => ({
-      name,
-      sales: Math.round(monthlySales[name] || 0),
-      revenue: Math.round((monthlySales[name] || 0) * 0.7),
-    }));
-
-    return {
-      totalProducts: products.length,
-      totalSales: delivered.length,
-      totalRevenue: Math.round(totalRevenue * 100) / 100,
-      lowStockItems: products.filter((p) => p.stock <= p.reorderLevel).length,
-      totalCustomers: store.customers.length,
-      totalSuppliers: store.suppliers.length,
-      inventoryValue: Math.round(products.reduce((sum, p) => sum + p.stock * p.cost, 0) * 100) / 100,
-      chartData,
-      recentMovements: store.stockMovements.slice(0, 5).map((m) => enrichMovement(m, store)),
-      recentSales: sales.slice(0, 5),
-    };
-}
 
 // Dashboard & Reports
 export const dashboardApi = {

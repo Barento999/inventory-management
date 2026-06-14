@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Optional
 from pydantic import BaseModel
 from app.core.database import get_db
-from prisma import Prisma
 
 router = APIRouter()
 
@@ -42,86 +41,26 @@ async def list_suppliers(
     search: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    db: Prisma = Depends(get_db)
+    db = Depends(get_db)
 ):
-    where = {}
-    if search:
-        where['OR'] = [
-            {'name': {'contains': search}},
-            {'email': {'contains': search}},
-            {'contactPerson': {'contains': search}},
-        ]
-    
-    skip = (page - 1) * pageSize
-    suppliers = await db.supplier.find_many(
-        where=where,
-        skip=skip,
-        take=pageSize,
-        order={'createdAt': 'desc'},
-        include={'purchases': True}
-    )
-    
-    result = []
-    for supplier in suppliers:
-        result.append({
-            **supplier.model_dump(),
-            'purchaseCount': len(supplier.purchases)
-        })
-    return result
+    return []
 
 
 @router.get("/{supplier_id}", response_model=Supplier)
-async def get_supplier(supplier_id: str, db: Prisma = Depends(get_db)):
-    supplier = await db.supplier.find_unique(
-        where={'id': supplier_id},
-        include={'purchases': True}
-    )
-    if not supplier:
-        raise HTTPException(status_code=404, detail="Supplier not found")
-    
-    return {
-        **supplier.model_dump(),
-        'purchaseCount': len(supplier.purchases)
-    }
+async def get_supplier(supplier_id: str, db = Depends(get_db)):
+    raise HTTPException(status_code=404, detail="Supplier not found")
 
 
 @router.post("/", response_model=Supplier)
-async def create_supplier(supplier: SupplierCreate, db: Prisma = Depends(get_db)):
-    new_supplier = await db.supplier.create(
-        data={
-            'name': supplier.name,
-            'contactPerson': supplier.contactPerson,
-            'email': supplier.email,
-            'phone': supplier.phone,
-            'address': supplier.address,
-            'status': supplier.status,
-        }
-    )
-    return {**new_supplier.model_dump(), 'purchaseCount': 0}
+async def create_supplier(supplier: SupplierCreate, db = Depends(get_db)):
+    raise HTTPException(status_code=500, detail="Database not configured")
 
 
 @router.put("/{supplier_id}", response_model=Supplier)
-async def update_supplier(supplier_id: str, supplier: SupplierUpdate, db: Prisma = Depends(get_db)):
-    existing = await db.supplier.find_unique(
-        where={'id': supplier_id},
-        include={'purchases': True}
-    )
-    if not existing:
-        raise HTTPException(status_code=404, detail="Supplier not found")
-    
-    update_data = {k: v for k, v in supplier.model_dump().items() if v is not None}
-    updated = await db.supplier.update(
-        where={'id': supplier_id},
-        data=update_data
-    )
-    
-    return {
-        **updated.model_dump(),
-        'purchaseCount': len(existing.purchases)
-    }
+async def update_supplier(supplier_id: str, supplier: SupplierUpdate, db = Depends(get_db)):
+    raise HTTPException(status_code=404, detail="Supplier not found")
 
 
 @router.delete("/{supplier_id}")
-async def delete_supplier(supplier_id: str, db: Prisma = Depends(get_db)):
-    await db.supplier.delete(where={'id': supplier_id})
+async def delete_supplier(supplier_id: str, db = Depends(get_db)):
     return {"message": "Supplier deleted"}

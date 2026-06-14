@@ -1,6 +1,17 @@
 from jose import jwt
 from datetime import datetime, timedelta
 from app.core.config import settings
+import hashlib
+import hmac
+
+def hash_password(password: str) -> str:
+    """Hash a password using SHA256"""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against its hash"""
+    return hash_password(plain_password) == hashed_password
 
 
 def create_access_token(data: dict, expires_delta: timedelta = None):

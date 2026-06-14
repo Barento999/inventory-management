@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from './ToastContext';
 import { authApi } from '../services/api';
+import apiClient from '../services/apiClient';
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
@@ -13,15 +14,22 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
-    if (stored) setUser(JSON.parse(stored));
+    const token = localStorage.getItem('auth_token');
+    if (stored) {
+      setUser(JSON.parse(stored));
+      if (token) {
+        apiClient.setToken(token);
+      }
+    }
   }, []);
 
   const login = async ({ email, password }) => {
     try {
-      const userData = await authApi.login(email, password);
+      const response = await authApi.login(email, password);
+      const userData = response.user;
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('authToken', userData.token);
+      apiClient.setToken(response.access_token);
       addToast({ title: 'Login successful', type: 'success' });
       navigate('/');
       return userData;
@@ -33,10 +41,11 @@ export function AuthProvider({ children }) {
 
   const register = async (data) => {
     try {
-      const userData = await authApi.register(data);
+      const response = await authApi.register(data);
+      const userData = response.user;
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('authToken', userData.token);
+      apiClient.setToken(response.access_token);
       addToast({ title: 'Registration successful', type: 'success' });
       navigate('/');
       return userData;
@@ -49,7 +58,8 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
-    localStorage.removeItem('authToken');
+    localStorage.removeItem('auth_token');
+    apiClient.setToken(null);
     navigate('/login');
     addToast({ title: 'Logged out', type: 'info' });
   };

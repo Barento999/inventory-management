@@ -3,7 +3,6 @@ from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 from app.core.database import get_db
-from prisma import Prisma
 
 router = APIRouter()
 
@@ -46,7 +45,7 @@ async def list_sales(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    db: Prisma = Depends(get_db)
+    db = Depends(get_db)
 ):
     where = {}
     if status:
@@ -78,7 +77,7 @@ async def list_sales(
 
 
 @router.get("/{sale_id}", response_model=Sale)
-async def get_sale(sale_id: str, db: Prisma = Depends(get_db)):
+async def get_sale(sale_id: str, db = Depends(get_db)):
     sale = await db.sale.find_unique(
         where={'id': sale_id},
         include={'customer': True}
@@ -95,7 +94,7 @@ async def get_sale(sale_id: str, db: Prisma = Depends(get_db)):
 
 
 @router.post("/", response_model=Sale)
-async def create_sale(sale: SaleCreate, db: Prisma = Depends(get_db)):
+async def create_sale(sale: SaleCreate, db = Depends(get_db)):
     customer = await db.customer.find_unique(where={'id': sale.customerId})
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
@@ -128,7 +127,7 @@ async def create_sale(sale: SaleCreate, db: Prisma = Depends(get_db)):
 
 
 @router.put("/{sale_id}/status")
-async def update_sale_status(sale_id: str, status: str, db: Prisma = Depends(get_db)):
+async def update_sale_status(sale_id: str, status: str, db = Depends(get_db)):
     sale = await db.sale.find_unique(where={'id': sale_id})
     if not sale:
         raise HTTPException(status_code=404, detail="Sale not found")
@@ -141,6 +140,6 @@ async def update_sale_status(sale_id: str, status: str, db: Prisma = Depends(get
 
 
 @router.delete("/{sale_id}")
-async def delete_sale(sale_id: str, db: Prisma = Depends(get_db)):
+async def delete_sale(sale_id: str, db = Depends(get_db)):
     await db.sale.delete(where={'id': sale_id})
     return {"message": "Sale deleted"}

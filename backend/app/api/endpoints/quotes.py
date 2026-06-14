@@ -3,7 +3,6 @@ from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 from app.core.database import get_db
-from prisma import Prisma
 
 router = APIRouter()
 
@@ -47,7 +46,7 @@ async def list_quotes(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    db: Prisma = Depends(get_db)
+    db = Depends(get_db)
 ):
     where = {}
     if status:
@@ -79,7 +78,7 @@ async def list_quotes(
 
 
 @router.get("/{quote_id}", response_model=Quote)
-async def get_quote(quote_id: str, db: Prisma = Depends(get_db)):
+async def get_quote(quote_id: str, db = Depends(get_db)):
     quote = await db.quote.find_unique(
         where={'id': quote_id},
         include={'customer': True}
@@ -96,7 +95,7 @@ async def get_quote(quote_id: str, db: Prisma = Depends(get_db)):
 
 
 @router.post("/", response_model=Quote)
-async def create_quote(quote: QuoteCreate, db: Prisma = Depends(get_db)):
+async def create_quote(quote: QuoteCreate, db = Depends(get_db)):
     customer = await db.customer.find_unique(where={'id': quote.customerId})
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
@@ -130,7 +129,7 @@ async def create_quote(quote: QuoteCreate, db: Prisma = Depends(get_db)):
 
 
 @router.put("/{quote_id}/status")
-async def update_quote_status(quote_id: str, status: str, db: Prisma = Depends(get_db)):
+async def update_quote_status(quote_id: str, status: str, db = Depends(get_db)):
     quote = await db.quote.find_unique(where={'id': quote_id})
     if not quote:
         raise HTTPException(status_code=404, detail="Quote not found")
@@ -143,6 +142,6 @@ async def update_quote_status(quote_id: str, status: str, db: Prisma = Depends(g
 
 
 @router.delete("/{quote_id}")
-async def delete_quote(quote_id: str, db: Prisma = Depends(get_db)):
+async def delete_quote(quote_id: str, db = Depends(get_db)):
     await db.quote.delete(where={'id': quote_id})
     return {"message": "Quote deleted"}
