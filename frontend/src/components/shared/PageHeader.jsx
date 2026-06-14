@@ -15,8 +15,15 @@ export default function PageHeader({ title, subtitle, action }) {
 
 export function FilterBar({ children }) {
   return (
-    <div className="flex flex-col sm:flex-row gap-3 mb-4">
-      {children}
+    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4">
+      {React.Children.map(children, child => {
+        if (React.isValidElement(child)) {
+          return React.cloneElement(child, {
+            className: `${child.props.className || ''} w-full sm:w-auto`
+          });
+        }
+        return child;
+      })}
     </div>
   );
 }

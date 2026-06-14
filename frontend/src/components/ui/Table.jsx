@@ -41,7 +41,7 @@ export default function Table({ columns = [], data = [], selectable = false, onS
               </th>
             )}
             {columns.map((col) => (
-              <th key={col.key} className="px-4 py-2 font-medium text-gray-600 dark:text-gray-200">{col.title}</th>
+              <th key={col.key} className="px-3 py-2 font-medium text-gray-600 dark:text-gray-200 whitespace-nowrap">{col.title}</th>
             ))}
           </tr>
         </thead>
@@ -50,7 +50,7 @@ export default function Table({ columns = [], data = [], selectable = false, onS
             data.map((row, i) => (
               <tr key={row.id ?? i} className={`border-b border-gray-200 dark:border-gray-600 ${selectedIds.includes(row.id) ? 'bg-primary/10' : ''}`}>
                 {selectable && (
-                  <td className="px-4 py-2">
+                  <td className="px-3 py-2">
                     <input
                       type="checkbox"
                       checked={selectedIds.includes(row.id)}
@@ -60,7 +60,7 @@ export default function Table({ columns = [], data = [], selectable = false, onS
                   </td>
                 )}
                 {columns.map((col) => (
-                  <td key={col.key} className="px-4 py-2">{col.render ? col.render(row) : row[col.key]}</td>
+                  <td key={col.key} className="px-3 py-2 whitespace-nowrap">{col.render ? col.render(row) : row[col.key]}</td>
                 ))}
               </tr>
             ))

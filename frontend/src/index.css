@@ -223,3 +223,46 @@
     page-break-inside: avoid;
   }
 }
+
+@media (max-width: 640px) {
+  .text-sm {
+    font-size: 0.875rem;
+  }
+  
+  .text-xs {
+    font-size: 0.75rem;
+  }
+  
+  .p-4 {
+    padding: 0.75rem;
+  }
+  
+  .gap-4 {
+    gap: 0.75rem;
+  }
+  
+  .gap-2 {
+    gap: 0.5rem;
+  }
+  
+  .grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
+  .grid-cols-3 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+  
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
+  .grid-cols-6 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
+  button, input, select, textarea {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+}

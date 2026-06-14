@@ -49,21 +49,21 @@ export default function BulkActions({ selectedIds, onBulkDelete, onBulkExport, o
 
   return (
     <>
-      <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mb-4 flex items-center justify-between">
+      <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 sm:p-4 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <span className="text-sm font-medium">{selectedIds.length} items selected</span>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {onBulkEdit && (
-            <Button size="sm" variant="secondary" onClick={() => setIsEditModalOpen(true)}>
+            <Button size="sm" variant="secondary" onClick={() => setIsEditModalOpen(true)} className="flex-1 sm:flex-none">
               <Edit className="w-4 h-4 mr-1" /> Bulk Edit
             </Button>
           )}
           {onBulkExport && (
-            <Button size="sm" variant="secondary" onClick={() => onBulkExport(selectedIds)}>
+            <Button size="sm" variant="secondary" onClick={() => onBulkExport(selectedIds)} className="flex-1 sm:flex-none">
               <Download className="w-4 h-4 mr-1" /> Export
             </Button>
           )}
           {onBulkDelete && (
-            <Button size="sm" variant="danger" onClick={() => setIsDeleteModalOpen(true)}>
+            <Button size="sm" variant="danger" onClick={() => setIsDeleteModalOpen(true)} className="flex-1 sm:flex-none">
               <Trash2 className="w-4 h-4 mr-1" /> Delete
             </Button>
           )}
