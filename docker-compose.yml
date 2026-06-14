@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: inventory_postgres
+    environment:
+      POSTGRES_USER: inventory
+      POSTGRES_PASSWORD: inventory123
+      POSTGRES_DB: inventory_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    container_name: inventory_backend
+    environment:
+      DATABASE_URL: postgresql://inventory:inventory123@postgres:5432/inventory_db
+      AUTH0_DOMAIN: your-auth0-domain.auth0.com
+      AUTH0_API_AUDIENCE: your-api-identifier
+      AUTH0_ISSUER: https://your-auth0-domain.auth0.com/
+      SECRET_KEY: your-secret-key-here
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    volumes:
+      - ./backend:/app
+      - /app/venv
+
+volumes:
+  postgres_data:
