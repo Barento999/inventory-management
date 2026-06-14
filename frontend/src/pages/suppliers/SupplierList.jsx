@@ -9,6 +9,7 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Pagination from '../../components/ui/Pagination';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import BulkActions from '../../components/ui/BulkActions';
 import PageHeader, { FilterBar } from '../../components/shared/PageHeader';
 import { useApi } from '../../hooks/useApi';
 import { suppliersApi } from '../../services/api';
@@ -23,6 +24,7 @@ export default function SupplierList() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   const { data: result, loading, reload } = useApi(
     () => suppliersApi.list({ search, page, pageSize: 8 }),
@@ -71,6 +73,35 @@ export default function SupplierList() {
     }
   };
 
+  const handleBulkDelete = async (ids) => {
+    try {
+      for (const id of ids) {
+        await suppliersApi.delete(id);
+      }
+      addToast({ title: `${ids.length} suppliers deleted`, type: 'success' });
+      setSelectedIds([]);
+      refresh();
+      reload();
+    } catch (err) {
+      addToast({ title: err.message, type: 'error' });
+    }
+  };
+
+  const handleBulkExport = async (ids) => {
+    const suppliers = (result?.data || []).filter(s => ids.includes(s.id));
+    const headers = ['id', 'name', 'contactPerson', 'email', 'phone', 'address'];
+    const rows = suppliers.map(s => headers.map(h => s[h]));
+    const csv = headers.join(',') + '\n' + rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'suppliers-export.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    addToast({ title: 'Suppliers exported', type: 'success' });
+  };
+
   const columns = [
     { key: 'name', title: 'Name' },
     { key: 'contactPerson', title: 'Contact' },
@@ -95,6 +126,13 @@ export default function SupplierList() {
           onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
       </FilterBar>
 
+      <BulkActions
+        selectedIds={selectedIds}
+        onBulkDelete={handleBulkDelete}
+        onBulkExport={handleBulkExport}
+        entityType="suppliers"
+      />
+
       <Card>
         {loading ? <Loader /> : (
           <>
@@ -102,7 +140,12 @@ export default function SupplierList() {
               <EmptyState type="default" action={<Button onClick={openCreate}>Add Supplier</Button>} />
             ) : (
               <>
-                <Table columns={columns} data={result?.data || []} />
+                <Table
+                  columns={columns}
+                  data={result?.data || []}
+                  selectable
+                  onSelectChange={setSelectedIds}
+                />
                 {result?.pagination?.totalPages > 1 && (
                   <Pagination current={result.pagination.page} total={result.pagination.totalPages} onPageChange={setPage} />
                 )}

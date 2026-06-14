@@ -11,6 +11,7 @@ import Select from '../../components/ui/Select';
 import Button from '../../components/ui/Button';
 import Pagination from '../../components/ui/Pagination';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import BulkActions from '../../components/ui/BulkActions';
 import PageHeader, { FilterBar } from '../../components/shared/PageHeader';
 import { useApi } from '../../hooks/useApi';
 import { salesApi, customersApi, productOptions } from '../../services/api';
@@ -37,6 +38,7 @@ export default function SaleList() {
   const [createOpen, setCreateOpen] = useState(false);
   const [detailItem, setDetailItem] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   const { data: result, loading, reload } = useApi(
     () => salesApi.list({ search, status, page, pageSize: 8 }),
@@ -89,6 +91,49 @@ export default function SaleList() {
     }
   };
 
+  const handleBulkDelete = async (ids) => {
+    try {
+      for (const id of ids) {
+        await salesApi.delete(id);
+      }
+      addToast({ title: `${ids.length} sales deleted`, type: 'success' });
+      setSelectedIds([]);
+      refresh();
+      reload();
+    } catch (err) {
+      addToast({ title: err.message, type: 'error' });
+    }
+  };
+
+  const handleBulkExport = async (ids) => {
+    const sales = (result?.data || []).filter(s => ids.includes(s.id));
+    const headers = ['id', 'customerName', 'total', 'status', 'createdAt'];
+    const rows = sales.map(s => headers.map(h => s[h]));
+    const csv = headers.join(',') + '\n' + rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sales-export.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    addToast({ title: 'Sales exported', type: 'success' });
+  };
+
+  const handleBulkEdit = async (ids, field, value) => {
+    try {
+      for (const id of ids) {
+        await salesApi.updateStatus(id, value);
+      }
+      addToast({ title: `${ids.length} sales updated`, type: 'success' });
+      setSelectedIds([]);
+      refresh();
+      reload();
+    } catch (err) {
+      addToast({ title: err.message, type: 'error' });
+    }
+  };
+
   const columns = [
     { key: 'id', title: 'SO #', render: (row) => `#${row.id}` },
     { key: 'customerName', title: 'Customer' },
@@ -124,6 +169,14 @@ export default function SaleList() {
           ]} />
       </FilterBar>
 
+      <BulkActions
+        selectedIds={selectedIds}
+        onBulkDelete={handleBulkDelete}
+        onBulkExport={handleBulkExport}
+        onBulkEdit={handleBulkEdit}
+        entityType="sales"
+      />
+
       <Card>
         {loading ? <Loader /> : (
           <>
@@ -131,7 +184,12 @@ export default function SaleList() {
               <EmptyState type="orders" action={<Button onClick={() => setCreateOpen(true)}>New Sale</Button>} />
             ) : (
               <>
-                <Table columns={columns} data={result?.data || []} />
+                <Table
+                  columns={columns}
+                  data={result?.data || []}
+                  selectable
+                  onSelectChange={setSelectedIds}
+                />
                 {result?.pagination?.totalPages > 1 && (
                   <Pagination current={result.pagination.page} total={result.pagination.totalPages} onPageChange={setPage} />
                 )}

@@ -10,6 +10,7 @@ import Select from '../../components/ui/Select';
 import Button from '../../components/ui/Button';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import BulkActions from '../../components/ui/BulkActions';
+import AdvancedSearch from '../../components/ui/AdvancedSearch';
 import PageHeader, { FilterBar } from '../../components/shared/PageHeader';
 import { useApi } from '../../hooks/useApi';
 import { productsApi, categoriesApi } from '../../services/api';
@@ -122,12 +123,19 @@ export default function ProductList() {
       />
 
       <FilterBar>
-        <Input
-          id="search"
-          placeholder="Search name or SKU..."
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          className="flex-1"
+        <AdvancedSearch
+          entityType="products"
+          fields={[
+            { value: 'name', label: 'Name' },
+            { value: 'sku', label: 'SKU' },
+            { value: 'category', label: 'Category' },
+            { value: 'status', label: 'Status' },
+            { value: 'price', label: 'Price' },
+          ]}
+          onSearch={({ searchTerm, filters }) => {
+            setSearch(searchTerm);
+            setPage(1);
+          }}
         />
         <Select
           id="category"

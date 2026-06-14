@@ -11,6 +11,7 @@ import Select from '../../components/ui/Select';
 import Button from '../../components/ui/Button';
 import Pagination from '../../components/ui/Pagination';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import BulkActions from '../../components/ui/BulkActions';
 import PageHeader, { FilterBar } from '../../components/shared/PageHeader';
 import { useApi } from '../../hooks/useApi';
 import { purchasesApi, suppliersApi, productOptions } from '../../services/api';
@@ -29,6 +30,7 @@ export default function PurchaseList() {
   const [createOpen, setCreateOpen] = useState(false);
   const [detailItem, setDetailItem] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   const { data: result, loading, reload } = useApi(
     () => purchasesApi.list({ search, status, page, pageSize: 8 }),
@@ -79,6 +81,35 @@ export default function PurchaseList() {
     } catch (err) {
       addToast({ title: err.message, type: 'error' });
     }
+  };
+
+  const handleBulkDelete = async (ids) => {
+    try {
+      for (const id of ids) {
+        await purchasesApi.delete(id);
+      }
+      addToast({ title: `${ids.length} purchases deleted`, type: 'success' });
+      setSelectedIds([]);
+      refresh();
+      reload();
+    } catch (err) {
+      addToast({ title: err.message, type: 'error' });
+    }
+  };
+
+  const handleBulkExport = async (ids) => {
+    const purchases = (result?.data || []).filter(p => ids.includes(p.id));
+    const headers = ['id', 'supplierName', 'total', 'status', 'expectedDate'];
+    const rows = purchases.map(p => headers.map(h => p[h]));
+    const csv = headers.join(',') + '\n' + rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'purchases-export.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    addToast({ title: 'Purchases exported', type: 'success' });
   };
 
   const handleApprove = async (id) => {
@@ -157,6 +188,13 @@ export default function PurchaseList() {
           ]} />
       </FilterBar>
 
+      <BulkActions
+        selectedIds={selectedIds}
+        onBulkDelete={handleBulkDelete}
+        onBulkExport={handleBulkExport}
+        entityType="purchases"
+      />
+
       <Card>
         {loading ? <Loader /> : (
           <>
@@ -164,7 +202,12 @@ export default function PurchaseList() {
               <EmptyState type="default" action={<Button onClick={() => setCreateOpen(true)}>New Purchase</Button>} />
             ) : (
               <>
-                <Table columns={columns} data={result?.data || []} />
+                <Table
+                  columns={columns}
+                  data={result?.data || []}
+                  selectable
+                  onSelectChange={setSelectedIds}
+                />
                 {result?.pagination?.totalPages > 1 && (
                   <Pagination current={result.pagination.page} total={result.pagination.totalPages} onPageChange={setPage} />
                 )}
