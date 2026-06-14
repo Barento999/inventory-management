@@ -21,6 +21,8 @@ import {
   History,
   PackageCheck,
   Building2,
+  Calendar as CalendarIcon,
+  Kanban,
 } from 'lucide-react';
 
 const navItems = [
@@ -35,6 +37,8 @@ const navItems = [
   { to: '/vendors', label: 'Vendor Portal', icon: Building2 },
   { to: '/purchases', label: 'Purchases', icon: ShoppingCart },
   { to: '/sales', label: 'Sales', icon: Receipt },
+  { to: '/kanban', label: 'Order Board', icon: Kanban },
+  { to: '/calendar', label: 'Calendar', icon: CalendarIcon },
   { to: '/quotes', label: 'Quotes', icon: FileText },
   { to: '/returns', label: 'Returns', icon: RotateCcw },
   { to: '/invoices', label: 'Invoices', icon: DollarSign },

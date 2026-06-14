@@ -6,6 +6,7 @@ import Loader from '../../components/ui/Loader';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import Button from '../../components/ui/Button';
+import FileUpload from '../../components/ui/FileUpload';
 import { useApi } from '../../hooks/useApi';
 import { productsApi, categoryOptions, warehousesApi } from '../../services/api';
 import { useDataRefresh } from '../../context/DataRefreshContext';
@@ -20,7 +21,9 @@ export default function ProductDetails() {
   const { addToast } = useToast();
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showVariants, setShowVariants] = useState(false);
+  const [showImageUpload, setShowImageUpload] = useState(false);
   const [variants, setVariants] = useState([{ name: '', options: [''] }]);
+  const [uploadedImages, setUploadedImages] = useState([]);
 
   const { data: product, loading } = useApi(
     () => (isCreate ? Promise.resolve(null) : productsApi.get(id)),
@@ -149,6 +152,24 @@ export default function ProductDetails() {
             <Input id="image" label="Image URL" className="md:col-span-2"
               {...register('image')} />
           </div>
+
+          <Button type="button" variant="secondary" onClick={() => setShowImageUpload(!showImageUpload)} className="w-full">
+            {showImageUpload ? 'Hide' : 'Show'} Image Upload
+          </Button>
+
+          {showImageUpload && (
+            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+              <FileUpload
+                accept="image/*"
+                multiple={true}
+                onUpload={(files) => {
+                  setUploadedImages(files);
+                  addToast({ title: `${files.length} image(s) uploaded`, type: 'success' });
+                }}
+              />
+            </div>
+          )}
+
           <Input id="description" label="Description"
             {...register('description')} />
 

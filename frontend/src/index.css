@@ -159,3 +159,67 @@
     background: linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
   }
 }
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .dark body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .bg-white, .dark .bg-white {
+    background: white !important;
+  }
+  
+  .bg-gray-50, .dark .bg-gray-50 {
+    background: white !important;
+  }
+  
+  .text-gray-800, .dark .text-gray-800 {
+    color: black !important;
+  }
+  
+  .text-gray-600, .dark .text-gray-600 {
+    color: #333 !important;
+  }
+  
+  .text-gray-500, .dark .text-gray-500 {
+    color: #666 !important;
+  }
+  
+  .border-gray-200, .dark .border-gray-200 {
+    border-color: #ccc !important;
+  }
+  
+  .shadow, .dark .shadow, .shadow-lg, .dark .shadow-lg {
+    box-shadow: none !important;
+  }
+  
+  @page {
+    margin: 1cm;
+  }
+  
+  .print-break-after {
+    page-break-after: always;
+  }
+  
+  .print-break-before {
+    page-break-before: always;
+  }
+  
+  .print-break-inside-avoid {
+    page-break-inside: avoid;
+  }
+}

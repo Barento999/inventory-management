@@ -29,6 +29,8 @@ import UserList from '../pages/users/UserList';
 import AuditLogList from '../pages/audit-logs/AuditLogList';
 import ShippingList from '../pages/shipping/ShippingList';
 import VendorPortal from '../pages/vendors/VendorPortal';
+import OrderCalendar from '../pages/calendar/OrderCalendar';
+import OrderKanban from '../pages/kanban/OrderKanban';
 import { useAuth } from '../context/AuthContext';
 
 function RequireAuth({ children }) {
@@ -80,6 +82,8 @@ export default function AppRoutes() {
         <Route path="inventory" element={<Inventory />} />
         <Route path="purchases" element={<PurchaseList />} />
         <Route path="sales" element={<SaleList />} />
+        <Route path="calendar" element={<OrderCalendar />} />
+        <Route path="kanban" element={<OrderKanban />} />
         <Route path="reports" element={<Reports />} />
         <Route path="reports/custom" element={<CustomReportBuilder />} />
         <Route path="settings" element={<Settings />} />

@@ -9,6 +9,7 @@ import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import Button from '../../components/ui/Button';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import BulkActions from '../../components/ui/BulkActions';
 import PageHeader, { FilterBar } from '../../components/shared/PageHeader';
 import { useApi } from '../../hooks/useApi';
 import { productsApi, categoriesApi } from '../../services/api';
@@ -24,6 +25,7 @@ export default function ProductList() {
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
   const [deleteId, setDeleteId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   const { data: result, loading, reload } = useApi(
     () => productsApi.list({ search, categoryId, status, page, pageSize: 8 }),
@@ -35,6 +37,49 @@ export default function ProductList() {
     try {
       await productsApi.delete(deleteId);
       addToast({ title: 'Product deleted', type: 'success' });
+      refresh();
+      reload();
+    } catch (err) {
+      addToast({ title: err.message, type: 'error' });
+    }
+  };
+
+  const handleBulkDelete = async (ids) => {
+    try {
+      for (const id of ids) {
+        await productsApi.delete(id);
+      }
+      addToast({ title: `${ids.length} products deleted`, type: 'success' });
+      setSelectedIds([]);
+      refresh();
+      reload();
+    } catch (err) {
+      addToast({ title: err.message, type: 'error' });
+    }
+  };
+
+  const handleBulkExport = async (ids) => {
+    const products = (result?.data || []).filter(p => ids.includes(p.id));
+    const headers = ['id', 'name', 'sku', 'category', 'price', 'cost', 'stock', 'status'];
+    const rows = products.map(p => headers.map(h => p[h]));
+    const csv = headers.join(',') + '\n' + rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'products-export.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    addToast({ title: 'Products exported', type: 'success' });
+  };
+
+  const handleBulkEdit = async (ids, field, value) => {
+    try {
+      for (const id of ids) {
+        await productsApi.update(id, { [field]: value });
+      }
+      addToast({ title: `${ids.length} products updated`, type: 'success' });
+      setSelectedIds([]);
       refresh();
       reload();
     } catch (err) {
@@ -102,10 +147,23 @@ export default function ProductList() {
         />
       </FilterBar>
 
+      <BulkActions
+        selectedIds={selectedIds}
+        onBulkDelete={handleBulkDelete}
+        onBulkExport={handleBulkExport}
+        onBulkEdit={handleBulkEdit}
+        entityType="products"
+      />
+
       <Card>
         {loading ? <Loader /> : (
           <>
-            <Table columns={columns} data={result?.data || []} />
+            <Table
+              columns={columns}
+              data={result?.data || []}
+              selectable
+              onSelectChange={setSelectedIds}
+            />
             {result?.pagination?.totalPages > 1 && (
               <Pagination
                 current={result.pagination.page}
