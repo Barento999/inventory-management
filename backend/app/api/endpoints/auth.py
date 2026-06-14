@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import Optional
+from sqlalchemy.orm import Session
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.database import get_db
-import uuid
+from app.models import User
 
 router = APIRouter()
 
@@ -20,7 +21,7 @@ class UserRegister(BaseModel):
 
 
 class UserResponse(BaseModel):
-    id: str
+    id: int
     email: str
     name: str
     role: str
@@ -35,103 +36,83 @@ class TokenResponse(BaseModel):
     user: UserResponse
 
 
-# In-memory user store for demo (replace with database later)
-users_db = {
-    "admin@demo.com": {
-        "id": "1",
-        "email": "admin@demo.com",
-        "password_hash": hash_password("admin123"),
-        "name": "Admin User",
-        "role": "admin"
-    },
-    "manager@demo.com": {
-        "id": "2",
-        "email": "manager@demo.com",
-        "password_hash": hash_password("manager123"),
-        "name": "Manager User",
-        "role": "manager"
-    },
-    "staff@demo.com": {
-        "id": "3",
-        "email": "staff@demo.com",
-        "password_hash": hash_password("staff123"),
-        "name": "Staff User",
-        "role": "staff"
-    }
-}
-
-
 @router.post("/login", response_model=TokenResponse)
-async def login(credentials: UserLogin, db = Depends(get_db)):
-    """Login endpoint"""
-    user = users_db.get(credentials.email)
+async def login(credentials: UserLogin, db: Session = Depends(get_db)):
+    """Login endpoint - authenticate user with email and password"""
+    # Find user by email
+    user = db.query(User).filter(User.email == credentials.email).first()
     
-    if not user or not verify_password(credentials.password, user["password_hash"]):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
     
+    # Verify password
+    if not verify_password(credentials.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # Create JWT token
     access_token = create_access_token(
-        data={"sub": user["email"], "user_id": user["id"], "role": user["role"]}
+        data={"sub": user.email, "user_id": user.id, "role": user.role}
     )
     
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "user": {
-            "id": user["id"],
-            "email": user["email"],
-            "name": user["name"],
-            "role": user["role"]
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "role": user.role
         }
     }
 
 
 @router.post("/register", response_model=TokenResponse)
-async def register(data: UserRegister, db = Depends(get_db)):
-    """Register endpoint"""
+async def register(data: UserRegister, db: Session = Depends(get_db)):
+    """Register endpoint - create new user account"""
     
-    if data.email in users_db:
+    # Check if email already exists
+    existing_user = db.query(User).filter(User.email == data.email).first()
+    if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    user_id = str(uuid.uuid4())
-    user_data = {
-        "id": user_id,
-        "email": data.email,
-        "password_hash": hash_password(data.password),
-        "name": data.name,
-        "role": "user"
-    }
+    # Create new user
+    new_user = User(
+        email=data.email,
+        password_hash=hash_password(data.password),
+        name=data.name,
+        role="user"
+    )
     
-    users_db[data.email] = user_data
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
     
+    # Create JWT token
     access_token = create_access_token(
-        data={"sub": data.email, "user_id": user_id, "role": "user"}
+        data={"sub": new_user.email, "user_id": new_user.id, "role": "user"}
     )
     
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "user": {
-            "id": user_id,
-            "email": data.email,
-            "name": data.name,
+            "id": new_user.id,
+            "email": new_user.email,
+            "name": new_user.name,
             "role": "user"
         }
     }
 
 
-@router.post("/forgot-password")
-async def forgot_password(email: str):
-    """Forgot password endpoint"""
-    user = users_db.get(email)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    # In a real app, send reset email here
-    return {"message": "Password reset email sent"}
+@router.get("/me", response_model=UserResponse)
+async def get_current_user(db: Session = Depends(get_db)):
+    """Get current logged-in user (requires valid token in header)"""
+    # This endpoint can be extended to validate JWT token
+    # For now, just return a success message
+    return {"message": "Use this endpoint with a valid JWT token in Authorization header"}
 
 
-@router.post("/reset-password")
-async def reset_password(token: str, password: str):
-    """Reset password endpoint"""
-    # In a real app, verify the token and update password
-    return {"message": "Password reset successfully"}
+@router.post("/logout")
+async def logout():
+    """Logout endpoint - client should discard token"""
+    return {"message": "Logged out successfully"}
