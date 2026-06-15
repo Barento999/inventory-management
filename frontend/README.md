@@ -1,12 +1,23 @@
-# InventoryPro - Inventory Management SaaS
+# Inventory Management Frontend
 
-A comprehensive inventory management SaaS application built with React 19, Vite, and TailwindCSS.
+React frontend for Inventory Management SaaS with Vite, TailwindCSS, and backend API integration.
+
+## Tech Stack
+
+- **Framework**: React 19
+- **Build Tool**: Vite
+- **Styling**: TailwindCSS
+- **Routing**: React Router DOM
+- **State Management**: React Context API
+- **HTTP Client**: Custom fetch-based API client
+- **Icons**: Lucide React
+- **Node Version**: 18+
 
 ## Features
 
 ### Core Features
 - **Dashboard**: Real-time analytics with charts and KPIs
-- **Products**: Full CRUD operations with barcode support, variants, and inventory tracking
+- **Products**: Full CRUD operations with barcode support and inventory tracking
 - **Categories**: Organize products into categories
 - **Warehouses**: Multi-warehouse support with location management
 - **Suppliers**: Manage supplier relationships
@@ -14,58 +25,56 @@ A comprehensive inventory management SaaS application built with React 19, Vite,
 - **Inventory**: Stock movements, adjustments, and low stock alerts
 - **Purchases**: Purchase order management
 - **Sales**: Sales order processing
-- **Reports**: Analytics with CSV/PDF export
+- **Reports**: Analytics and reporting
 
 ### Advanced Features
 - **Serial Number Tracking**: Track individual items by serial number
 - **Batch/Expiration Tracking**: Track product batches and expiration dates
-- **Product Variants**: Support for size, color, and other product variants
 - **Quotes & Estimates**: Create and convert quotes to sales
 - **Returns & Refunds**: Manage product returns and refunds
 - **Invoicing**: Generate and manage invoices with payment tracking
-- **Payment Processing**: Stripe and PayPal integration settings
-- **Tax Management**: Configurable tax rates and VAT numbers
 - **Role-Based Access Control (RBAC)**: User roles and permissions
 - **Audit Logs**: Track all system activities
-
-## Tech Stack
-
-- **Frontend**: React 19.2.7
-- **Build Tool**: Vite 5.3.5
-- **Styling**: TailwindCSS 3.4.19
-- **Routing**: React Router DOM 6.30.4
-- **Forms**: React Hook Form 7.79.0
-- **Charts**: Recharts 2.15.4
-- **Icons**: Lucide React 1.18.0
-- **HTTP Client**: Axios 1.17.0
-- **State Management**: React Context API
-- **Code Quality**: ESLint 9.7.0, Prettier 3.3.2
+- **Notifications**: System notifications for important events
+- **Settings**: Configure company settings, currency, tax rates
+- **Global Search**: Search across products, customers, suppliers, sales, and purchases
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
+- Backend API running on http://localhost:8000
 
 ### Installation
 
-1. Clone the repository:
+1. **Clone the repository**:
 ```bash
 git clone https://github.com/Barento999/inventory-management.git
-cd inventory-management-SaaS
+cd inventory-management-SaaS/frontend
 ```
 
-2. Install dependencies:
+2. **Install dependencies**:
 ```bash
 npm install
 ```
 
-3. Start the development server:
+3. **Configure environment variables**:
+```bash
+cp .env.example .env
+```
+
+4. **Update `.env` with your API URL**:
+```env
+VITE_API_URL=http://localhost:8000/api
+```
+
+5. **Start the development server**:
 ```bash
 npm run dev
 ```
 
-4. Open your browser and navigate to `http://localhost:5173`
+6. **Open your browser** and navigate to `http://localhost:5173`
 
 ### Build for Production
 
@@ -81,16 +90,11 @@ The built files will be in the `dist` directory.
 npm run preview
 ```
 
-## Demo Credentials
-
-- **Admin**: admin@demo.com / admin123
-- **Manager**: manager@demo.com / manager123
-- **Staff**: staff@demo.com / staff123
-
 ## Project Structure
 
 ```
 src/
+├── assets/              # Static assets (images, icons)
 ├── components/          # Reusable UI components
 │   ├── layout/          # Layout components (Sidebar, Navbar)
 │   ├── shared/          # Shared components (PageHeader, FilterBar)
@@ -101,18 +105,21 @@ src/
 │   ├── ToastContext.jsx
 │   └── DataRefreshContext.jsx
 ├── hooks/               # Custom React hooks
-│   └── useApi.js
+│   └── useApi.js        # API data fetching hook
 ├── pages/               # Page components
 │   ├── auth/            # Authentication pages
 │   ├── products/        # Product management
 │   ├── categories/      # Category management
 │   ├── warehouses/      # Warehouse management
+│   ├── suppliers/       # Supplier management
+│   ├── customers/       # Customer management
 │   ├── serial-numbers/  # Serial number tracking
 │   ├── batches/         # Batch management
 │   ├── quotes/          # Quote management
 │   ├── returns/         # Return management
 │   ├── invoices/        # Invoice management
 │   ├── users/           # User management
+│   ├── roles/           # Role management
 │   ├── audit-logs/      # Audit log viewing
 │   ├── dashboard/       # Dashboard
 │   ├── inventory/       # Inventory management
@@ -120,13 +127,12 @@ src/
 │   ├── sales/           # Sales orders
 │   ├── reports/         # Reports and analytics
 │   └── settings/        # Application settings
-├── routes/              # Route configuration
-├── services/            # API layer (mock with localStorage)
-│   ├── api.js           # API functions
-│   └── store.js         # Data store
-└── utils/               # Utility functions
-    ├── format.js        # Formatting utilities
-    └── status.js        # Status utilities
+├── services/            # API layer
+│   ├── api.js           # API client and service functions
+│   └── store.js         # Legacy data store (deprecated)
+├── App.jsx              # Main App component
+├── main.jsx             # Application entry point
+└── index.css            # Global styles
 ```
 
 ## Available Scripts
@@ -135,28 +141,47 @@ src/
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint
-- `npm run format` - Format code with Prettier
 
-## Data Storage
+## API Integration
 
-This application uses localStorage for data persistence in demo mode. The data is stored under the key `inventory_saas_data` and includes:
+The frontend is connected to the backend API through a custom API client (`src/services/api.js`). All data is fetched from the PostgreSQL database via the backend API.
 
-- Products with variants, barcodes, and tracking options
-- Categories
-- Warehouses
-- Suppliers
-- Customers
-- Stock movements
-- Serial numbers
-- Batches
-- Purchase orders
-- Sales orders
-- Quotes
-- Returns
-- Invoices
-- Users and roles
-- Audit logs
-- Settings
+### API Client
+
+The API client provides a consistent interface for making HTTP requests:
+
+```javascript
+import { apiClient } from './services/api';
+
+// GET request
+const data = await apiClient.get('/products');
+
+// POST request
+const result = await apiClient.post('/products', productData);
+
+// PUT request
+const result = await apiClient.put('/products/1', productData);
+
+// DELETE request
+await apiClient.delete('/products/1');
+```
+
+### Authentication
+
+The frontend uses JWT token-based authentication:
+
+1. **Login**: User credentials sent to `/api/auth/login`
+2. **Token Storage**: JWT token stored in localStorage
+3. **Token Usage**: Token included in Authorization header for all API requests
+4. **Token Refresh**: Automatic token refresh on expiration
+
+### Default Users
+
+- **Admin**: admin@inventory.com (full access)
+- **Manager**: manager@inventory.com (manage inventory and sales)
+- **User**: user@inventory.com (limited access)
+
+Default password: `password123` (change in production)
 
 ## Features Overview
 
@@ -166,7 +191,7 @@ This application uses localStorage for data persistence in demo mode. The data i
 - Batch/expiration date tracking
 - Low stock alerts
 - Stock movements with reasons
-- Product variants (size, color, etc.)
+- Real-time stock level updates
 
 ### Sales & Purchases
 - Quote to sale conversion
@@ -180,7 +205,7 @@ This application uses localStorage for data persistence in demo mode. The data i
 - Top products analysis
 - Inventory valuation
 - Low stock reports
-- CSV/PDF export
+- Dashboard statistics
 
 ### User Management
 - Role-based access control (Admin, Manager, Staff, Viewer)
@@ -191,9 +216,58 @@ This application uses localStorage for data persistence in demo mode. The data i
 ### Settings
 - Company information
 - Tax configuration
-- Payment gateway setup (Stripe, PayPal)
 - Currency and timezone
-- Theme selection (dark/light mode)
+- Low stock threshold configuration
+
+## Components
+
+### Layout Components
+- **Sidebar**: Navigation menu with role-based menu items
+- **Navbar**: Top navigation with user menu and notifications
+- **PageHeader**: Page title with breadcrumbs and actions
+
+### Shared Components
+- **FilterBar**: Search and filter controls
+- **DataTable**: Reusable data table with pagination
+- **Modal**: Modal dialog component
+- **Form**: Form component with validation
+
+### UI Components
+- **Button**: Button component with variants
+- **Input**: Input component with validation
+- **Select**: Select dropdown component
+- **Badge**: Badge component for status display
+- **Card**: Card component for content grouping
+
+## State Management
+
+The application uses React Context API for state management:
+
+- **AuthContext**: User authentication state
+- **ThemeContext**: Theme (dark/light mode)
+- **ToastContext**: Toast notifications
+- **DataRefreshContext**: Data refresh triggers
+
+## Custom Hooks
+
+### useApi Hook
+
+Custom hook for API data fetching with loading and error states:
+
+```javascript
+const { data, loading, error, refetch } = useApi(
+  () => productsApi.list({ page: 1, pageSize: 10 }),
+  []
+);
+```
+
+## Environment Variables
+
+Create a `.env` file in the frontend directory:
+
+```env
+VITE_API_URL=http://localhost:8000/api
+```
 
 ## Browser Support
 
@@ -201,6 +275,66 @@ This application uses localStorage for data persistence in demo mode. The data i
 - Firefox (latest)
 - Safari (latest)
 - Edge (latest)
+
+## Development
+
+### Code Style
+
+```bash
+# Run linter
+npm run lint
+```
+
+### Troubleshooting
+
+#### API Connection Issues
+- Ensure backend is running on http://localhost:8000
+- Check VITE_API_URL in .env file
+- Verify backend CORS configuration
+
+#### Build Issues
+- Clear node_modules: `rm -rf node_modules`
+- Reinstall dependencies: `npm install`
+- Clear Vite cache: `rm -rf .vite`
+
+## Deployment
+
+### Production Build
+
+```bash
+npm run build
+```
+
+The built files will be in the `dist` directory.
+
+### Serve with Nginx
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    root /path/to/dist;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /api {
+        proxy_pass http://localhost:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+### Environment Variables in Production
+
+Set the API URL to your production backend:
+
+```env
+VITE_API_URL=https://api.your-domain.com/api
+```
 
 ## License
 
