@@ -9,6 +9,7 @@ export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { addToast } = useToast();
 
@@ -21,6 +22,7 @@ export function AuthProvider({ children }) {
         apiClient.setToken(token);
       }
     }
+    setLoading(false);
   }, []);
 
   const login = async ({ email, password }) => {
@@ -65,7 +67,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

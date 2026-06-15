@@ -34,12 +34,18 @@ import OrderKanban from '../pages/kanban/OrderKanban';
 import { useAuth } from '../context/AuthContext';
 
 function RequireAuth({ children }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) {
+    return null; // or return a loading spinner
+  }
   return user ? children : <Navigate to="/login" replace />;
 }
 
 function GuestOnly({ children }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) {
+    return null; // or return a loading spinner
+  }
   return user ? <Navigate to="/" replace /> : children;
 }
 
