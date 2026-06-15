@@ -94,8 +94,13 @@ export default function TopNavbar({ onMenuToggle, mobileOpen }) {
         </button>
 
         <div className="hidden sm:flex items-center gap-2">
-          <button type="button" onClick={() => navigate('/settings')} className="text-sm font-medium text-gray-800 dark:text-gray-200 hover:text-primary">
-            {user?.name || 'Guest'}
+          <button type="button" onClick={() => navigate('/settings')} className="flex flex-col items-start">
+            <span className="text-sm font-medium text-gray-800 dark:text-gray-200 hover:text-primary">
+              {user?.name || 'Guest'}
+            </span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+              {user?.role || 'user'}
+            </span>
           </button>
           <button type="button" onClick={logout} className="px-2 py-1 text-xs bg-primary text-white rounded hover:bg-primary-light">
             Logout
