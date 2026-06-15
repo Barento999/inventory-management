@@ -297,8 +297,7 @@ export const reportsApi = {
     return summary.chartData;
   },
   topProducts: async () => {
-    // Placeholder - needs backend implementation
-    return [];
+    return await apiClient.get('/dashboard/top-products');
   },
   inventoryValuation: async () => {
     const stockLevels = await apiClient.get('/inventory/stock-levels');
@@ -319,36 +318,26 @@ export const reportsApi = {
 // Settings
 export const settingsApi = {
   get: async () => {
-    // Placeholder - needs backend implementation
-    return {
-      companyName: 'Inventory Management',
-      currency: 'USD',
-      lowStockThreshold: 10,
-    };
+    return await apiClient.get('/settings');
   },
   update: async (data) => {
-    // Placeholder - needs backend implementation
-    return data;
+    return await apiClient.put('/settings', data);
   },
   resetData: async () => {
-    // This should call backend to reset data
-    return {};
+    return await apiClient.post('/settings/reset');
   },
 };
 
 // Notifications
 export const notificationsApi = {
   list: async () => {
-    // Placeholder - needs backend implementation
-    return [];
+    return await apiClient.get('/notifications');
   },
   markRead: async (id) => {
-    // Placeholder - needs backend implementation
-    return {};
+    return await apiClient.put(`/notifications/${id}/read`);
   },
   markAllRead: async () => {
-    // Placeholder - needs backend implementation
-    return [];
+    return await apiClient.put('/notifications/read-all');
   },
 };
 
@@ -423,40 +412,41 @@ export const warehousesApi = {
 // Serial Numbers
 export const serialNumbersApi = {
   list: async ({ productId, status, page = 1, pageSize = 10 } = {}) => {
-    // Placeholder - needs backend implementation
-    return { items: [], total: 0, page, pageSize, totalPages: 0 };
+    const params = new URLSearchParams();
+    if (productId) params.append('product_id', productId);
+    if (status) params.append('status', status);
+    if (page) params.append('page', page);
+    if (pageSize) params.append('page_size', pageSize);
+    return await apiClient.get(`/serial-numbers?${params}`);
   },
   create: async (data) => {
-    // Placeholder - needs backend implementation
-    return {};
+    return await apiClient.post('/serial-numbers', data);
   },
   update: async (id, data) => {
-    // Placeholder - needs backend implementation
-    return {};
+    return await apiClient.put(`/serial-numbers/${id}`, data);
   },
   delete: async (id) => {
-    // Placeholder - needs backend implementation
-    return { success: true };
+    return await apiClient.delete(`/serial-numbers/${id}`);
   },
 };
 
 // Batches
 export const batchesApi = {
   list: async ({ productId, status, page = 1, pageSize = 10 } = {}) => {
-    // Placeholder - needs backend implementation
-    return { items: [], total: 0, page, pageSize, totalPages: 0 };
+    const params = new URLSearchParams();
+    if (productId) params.append('product_id', productId);
+    if (page) params.append('page', page);
+    if (pageSize) params.append('page_size', pageSize);
+    return await apiClient.get(`/batches?${params}`);
   },
   create: async (data) => {
-    // Placeholder - needs backend implementation
-    return {};
+    return await apiClient.post('/batches', data);
   },
   update: async (id, data) => {
-    // Placeholder - needs backend implementation
-    return {};
+    return await apiClient.put(`/batches/${id}`, data);
   },
   delete: async (id) => {
-    // Placeholder - needs backend implementation
-    return { success: true };
+    return await apiClient.delete(`/batches/${id}`);
   },
 };
 
@@ -488,52 +478,49 @@ export const quotesApi = {
 // Returns
 export const returnsApi = {
   list: async ({ status, page = 1, pageSize = 10 } = {}) => {
-    // Placeholder - needs backend implementation
-    return { items: [], total: 0, page, pageSize, totalPages: 0 };
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (page) params.append('page', page);
+    if (pageSize) params.append('page_size', pageSize);
+    return await apiClient.get(`/returns?${params}`);
   },
   get: async (id) => {
-    // Placeholder - needs backend implementation
-    return {};
+    return await apiClient.get(`/returns/${id}`);
   },
   create: async (data) => {
-    // Placeholder - needs backend implementation
-    return {};
+    return await apiClient.post('/returns', data);
   },
   update: async (id, data) => {
-    // Placeholder - needs backend implementation
-    return {};
+    return await apiClient.put(`/returns/${id}`, data);
   },
   delete: async (id) => {
-    // Placeholder - needs backend implementation
-    return { success: true };
+    return await apiClient.delete(`/returns/${id}`);
   },
 };
 
 // Invoices
 export const invoicesApi = {
   list: async ({ status, page = 1, pageSize = 10 } = {}) => {
-    // Placeholder - needs backend implementation
-    return { items: [], total: 0, page, pageSize, totalPages: 0 };
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (page) params.append('page', page);
+    if (pageSize) params.append('page_size', pageSize);
+    return await apiClient.get(`/invoices?${params}`);
   },
   get: async (id) => {
-    // Placeholder - needs backend implementation
-    return {};
+    return await apiClient.get(`/invoices/${id}`);
   },
   create: async (data) => {
-    // Placeholder - needs backend implementation
-    return {};
+    return await apiClient.post('/invoices', data);
   },
   update: async (id, data) => {
-    // Placeholder - needs backend implementation
-    return {};
+    return await apiClient.put(`/invoices/${id}`, data);
   },
   markAsPaid: async (id) => {
-    // Placeholder - needs backend implementation
-    return {};
+    return await apiClient.put(`/invoices/${id}`, { status: 'paid' });
   },
   delete: async (id) => {
-    // Placeholder - needs backend implementation
-    return { success: true };
+    return await apiClient.delete(`/invoices/${id}`);
   },
 };
 
@@ -562,34 +549,30 @@ export const usersApi = {
 
 export const rolesApi = {
   list: async () => {
-    // Placeholder - needs backend implementation
-    return [];
+    return await apiClient.get('/roles');
   },
   get: async (id) => {
-    // Placeholder - needs backend implementation
-    return {};
+    return await apiClient.get(`/roles/${id}`);
   },
   create: async (data) => {
-    // Placeholder - needs backend implementation
-    return {};
+    return await apiClient.post('/roles', data);
   },
   update: async (id, data) => {
-    // Placeholder - needs backend implementation
-    return {};
+    return await apiClient.put(`/roles/${id}`, data);
   },
   delete: async (id) => {
-    // Placeholder - needs backend implementation
-    return { success: true };
+    return await apiClient.delete(`/roles/${id}`);
   },
 };
 
 export const auditLogsApi = {
   list: async ({ userId, action, entity, page = 1, pageSize = 20 } = {}) => {
-    // Placeholder - needs backend implementation
-    return { items: [], total: 0, page, pageSize, totalPages: 0 };
+    const params = new URLSearchParams();
+    if (page) params.append('page', page);
+    if (pageSize) params.append('page_size', pageSize);
+    return await apiClient.get(`/audit-logs?${params}`);
   },
   create: async (data) => {
-    // Placeholder - needs backend implementation
-    return {};
+    return await apiClient.post('/audit-logs', data);
   },
 };

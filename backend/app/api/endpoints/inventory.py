@@ -3,7 +3,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.models import Product
+from app.models import Product, StockMovement
 
 router = APIRouter()
 
@@ -60,14 +60,36 @@ async def get_stock_movements(
     page_size: int = 10,
     db: Session = Depends(get_db)
 ):
-    """Get stock movements (placeholder - needs stock movement model)"""
-    # For now, return empty list since we don't have a stock movement model
+    """Get stock movements"""
+    query = db.query(StockMovement)
+    
+    if type:
+        query = query.filter(StockMovement.type == type)
+    
+    total = query.count()
+    offset = (page - 1) * page_size
+    movements = query.order_by(StockMovement.created_at.desc()).offset(offset).limit(page_size).all()
+    
+    # Convert to dict manually
+    movements_data = [
+        {
+            "id": m.id,
+            "productId": m.product_id,
+            "type": m.type,
+            "quantity": m.quantity,
+            "reason": m.reason,
+            "reference": m.reference,
+            "createdAt": m.created_at.isoformat() if m.created_at else None
+        }
+        for m in movements
+    ]
+    
     return {
-        "items": [],
-        "total": 0,
+        "items": movements_data,
+        "total": total,
         "page": page,
         "pageSize": page_size,
-        "totalPages": 0,
+        "totalPages": (total + page_size - 1) // page_size,
     }
 
 
@@ -89,6 +111,16 @@ async def adjust_stock(
         product.stock += adjustment.quantity
     elif adjustment.type == 'adjustment':
         product.stock = adjustment.quantity
+    
+    # Create stock movement record
+    movement = StockMovement(
+        product_id=adjustment.productId,
+        type=adjustment.type,
+        quantity=adjustment.quantity,
+        reason=adjustment.reason,
+        reference=adjustment.reference
+    )
+    db.add(movement)
     
     db.commit()
     db.refresh(product)

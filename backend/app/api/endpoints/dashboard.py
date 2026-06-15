@@ -58,3 +58,24 @@ async def get_dashboard_summary(db: Session = Depends(get_db)):
         "recentSales": recent_sales_data,
         "recentMovements": []
     }
+
+
+@router.get("/top-products")
+async def get_top_products(db: Session = Depends(get_db)):
+    """Get top selling products"""
+    # For now, return top products by stock value
+    products = db.query(Product).order_by((Product.stock * Product.price).desc()).limit(10).all()
+    
+    top_products_data = [
+        {
+            "id": p.id,
+            "name": p.name,
+            "sku": p.sku,
+            "stock": p.stock,
+            "price": p.price,
+            "value": p.stock * p.price
+        }
+        for p in products
+    ]
+    
+    return top_products_data
