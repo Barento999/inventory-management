@@ -1,8 +1,8 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Header
 from pydantic import BaseModel
 from typing import Optional
 from sqlalchemy.orm import Session
-from app.core.security import hash_password, verify_password, create_access_token
+from app.core.security import hash_password, verify_password, create_access_token, verify_token
 from app.core.database import get_db
 from app.models import User
 
@@ -18,6 +18,15 @@ class UserRegister(BaseModel):
     email: str
     password: str
     name: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    password: str
 
 
 class UserResponse(BaseModel):
@@ -105,14 +114,65 @@ async def register(data: UserRegister, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user(db: Session = Depends(get_db)):
+async def get_current_user(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Get current logged-in user (requires valid token in header)"""
-    # This endpoint can be extended to validate JWT token
-    # For now, just return a success message
-    return {"message": "Use this endpoint with a valid JWT token in Authorization header"}
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+    
+    token = authorization.replace("Bearer ", "") if authorization.startswith("Bearer ") else authorization
+    
+    payload = verify_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    user_id = payload.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return user
 
 
 @router.post("/logout")
 async def logout():
     """Logout endpoint - client should discard token"""
     return {"message": "Logged out successfully"}
+
+
+@router.post("/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """Send password reset email (placeholder implementation)"""
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        # Don't reveal if email exists or not for security
+        return {"message": "If the email exists, a reset link will be sent"}
+    
+    # In a real implementation, you would:
+    # 1. Generate a reset token
+    # 2. Send an email with the reset link
+    # For now, return a success message
+    return {"message": "Password reset link sent to email"}
+
+
+@router.post("/reset-password")
+async def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
+    """Reset password using token (placeholder implementation)"""
+    payload = verify_token(request.token)
+    if not payload:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+    
+    user_id = payload.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Invalid token")
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.password_hash = hash_password(request.password)
+    db.commit()
+    
+    return {"message": "Password reset successfully"}

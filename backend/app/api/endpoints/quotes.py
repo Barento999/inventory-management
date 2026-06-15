@@ -123,6 +123,27 @@ async def update_quote(quote_id: int, quote: QuoteUpdate, db: Session = Depends(
     return db_quote
 
 
+@router.put("/{quote_id}/status")
+async def update_quote_status(quote_id: int, status: str, db: Session = Depends(get_db)):
+    """Update quote status"""
+    db_quote = db.query(Quote).filter(Quote.id == quote_id).first()
+    if not db_quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    
+    db_quote.status = status
+    db.commit()
+    db.refresh(db_quote)
+    
+    return {
+        "id": db_quote.id,
+        "customer_id": db_quote.customer_id,
+        "total": db_quote.total,
+        "status": db_quote.status,
+        "valid_until": db_quote.valid_until.isoformat() if db_quote.valid_until else None,
+        "notes": db_quote.notes
+    }
+
+
 @router.delete("/{quote_id}")
 async def delete_quote(quote_id: int, db: Session = Depends(get_db)):
     """Delete a quote"""

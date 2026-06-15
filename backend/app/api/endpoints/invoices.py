@@ -124,6 +124,31 @@ async def update_invoice(invoice_id: int, invoice: InvoiceUpdate, db: Session = 
     }
 
 
+@router.put("/{invoice_id}/mark-paid")
+async def mark_invoice_paid(invoice_id: int, db: Session = Depends(get_db)):
+    """Mark invoice as paid"""
+    db_invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    if not db_invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    
+    db_invoice.status = "paid"
+    from datetime import datetime
+    db_invoice.paid_date = datetime.now()
+    db.commit()
+    db.refresh(db_invoice)
+    
+    return {
+        "id": db_invoice.id,
+        "saleId": db_invoice.sale_id,
+        "invoiceNumber": db_invoice.invoice_number,
+        "total": db_invoice.total,
+        "status": db_invoice.status,
+        "dueDate": db_invoice.due_date.isoformat() if db_invoice.due_date else None,
+        "paidDate": db_invoice.paid_date.isoformat() if db_invoice.paid_date else None,
+        "createdAt": db_invoice.created_at.isoformat() if db_invoice.created_at else None
+    }
+
+
 @router.delete("/{invoice_id}")
 async def delete_invoice(invoice_id: int, db: Session = Depends(get_db)):
     """Delete an invoice"""
