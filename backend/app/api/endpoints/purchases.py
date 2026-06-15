@@ -46,6 +46,18 @@ class PurchaseSchema(PurchaseBase):
         from_attributes = True
 
 
+@router.get("")
+async def list_purchases_no_slash(
+    search: Optional[str] = None,
+    status: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10,
+    db: Session = Depends(get_db)
+):
+    """List all purchases (no trailing slash)"""
+    return await list_purchases(search, status, page, page_size, db)
+
+
 @router.get("/")
 async def list_purchases(
     search: Optional[str] = None,

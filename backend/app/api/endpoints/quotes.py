@@ -34,6 +34,18 @@ class QuoteSchema(QuoteBase):
         from_attributes = True
 
 
+@router.get("")
+async def list_quotes_no_slash(
+    search: Optional[str] = None,
+    status: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10,
+    db: Session = Depends(get_db)
+):
+    """List all quotes (no trailing slash)"""
+    return await list_quotes(search, status, page, page_size, db)
+
+
 @router.get("/")
 async def list_quotes(
     search: Optional[str] = None,

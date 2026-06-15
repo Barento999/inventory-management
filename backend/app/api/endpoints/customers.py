@@ -33,6 +33,17 @@ class CustomerSchema(CustomerBase):
         from_attributes = True
 
 
+@router.get("")
+async def list_customers_no_slash(
+    search: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10,
+    db: Session = Depends(get_db)
+):
+    """List all customers (no trailing slash)"""
+    return await list_customers(search, page, page_size, db)
+
+
 @router.get("/")
 async def list_customers(
     search: Optional[str] = None,

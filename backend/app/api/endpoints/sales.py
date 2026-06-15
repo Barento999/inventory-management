@@ -32,6 +32,18 @@ class SaleSchema(SaleBase):
         from_attributes = True
 
 
+@router.get("")
+async def list_sales_no_slash(
+    search: Optional[str] = None,
+    status: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10,
+    db: Session = Depends(get_db)
+):
+    """List all sales (no trailing slash)"""
+    return await list_sales(search, status, page, page_size, db)
+
+
 @router.get("/")
 async def list_sales(
     search: Optional[str] = None,

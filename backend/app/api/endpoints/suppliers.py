@@ -35,6 +35,17 @@ class SupplierSchema(SupplierBase):
         from_attributes = True
 
 
+@router.get("")
+async def list_suppliers_no_slash(
+    search: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10,
+    db: Session = Depends(get_db)
+):
+    """List all suppliers (no trailing slash)"""
+    return await list_suppliers(search, page, page_size, db)
+
+
 @router.get("/")
 async def list_suppliers(
     search: Optional[str] = None,
