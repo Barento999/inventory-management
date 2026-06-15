@@ -207,57 +207,27 @@ export const customersApi = {
 
 // Inventory
 export const inventoryApi = {
-  list: withStoreRead((store, { search = '', type, page = 1, pageSize = 10 } = {}) => {
-    let items = store.stockMovements.map((m) => enrichMovement(m, store));
-    if (type) items = items.filter((m) => m.type === type);
-    items = filterBySearch(items, search, ['productName', 'reason', 'reference']);
-    return paginate(items, page, pageSize);
-  }),
+  list: async ({ search = '', type, page = 1, pageSize = 10 } = {}) => {
+    const params = new URLSearchParams({ search: String(search), page: String(page), pageSize: String(pageSize) });
+    if (type) params.append('type', type);
+    return apiClient.get(`/inventory/movements?${params.toString()}`);
+  },
 
-  stockLevels: withStoreRead((store, { search = '', lowStockOnly = false } = {}) => {
-    let items = store.products.map((p) => {
-      const enriched = enrichProduct(p, store.categories);
-      return {
-        ...enriched,
-        isLowStock: p.stock <= p.reorderLevel,
-        value: p.stock * p.cost,
-      };
-    });
-    if (lowStockOnly) items = items.filter((p) => p.isLowStock);
-    items = filterBySearch(items, search, ['name', 'sku', 'category']);
-    return items;
-  }),
+  stockLevels: async ({ search = '', lowStockOnly = false } = {}) => {
+    const params = new URLSearchParams({ search: String(search) });
+    if (lowStockOnly) params.append('low_stock', 'true');
+    return apiClient.get(`/inventory/stock-levels?${params.toString()}`);
+  },
 
-  adjust: withStore((store, { productId, type, quantity, reason, reference }) => {
-    const qty = Number(quantity);
-    if (type === 'out') {
-      const product = store.products.find((p) => p.id === Number(productId));
-      if (product && product.stock < qty) throw new Error('Insufficient stock');
-      return recordMovement(store, {
-        type: 'out',
-        productId: Number(productId),
-        quantity: -qty,
-        reason,
-        reference: reference || `OUT-${Date.now()}`,
-      });
-    }
-    if (type === 'in') {
-      return recordMovement(store, {
-        type: 'in',
-        productId: Number(productId),
-        quantity: qty,
-        reason,
-        reference: reference || `IN-${Date.now()}`,
-      });
-    }
-    return recordMovement(store, {
-      type: 'adjustment',
-      productId: Number(productId),
-      quantity: qty,
+  adjust: async ({ productId, type, quantity, reason, reference }) => {
+    return apiClient.post('/inventory/adjust', {
+      productId,
+      type,
+      quantity,
       reason,
-      reference: reference || `ADJ-${Date.now()}`,
+      reference,
     });
-  }),
+  },
 };
 
 // Purchases
@@ -322,99 +292,105 @@ export const dashboardApi = {
 };
 
 export const reportsApi = {
-  salesByMonth: withStoreRead((store) => buildSummary(store).chartData),
-  topProducts: withStoreRead((store) => {
-    const counts = {};
-    store.sales.forEach((sale) => {
-      if (!['confirmed', 'shipped', 'delivered'].includes(sale.status)) return;
-      sale.items.forEach((item) => {
-        const product = store.products.find((p) => p.id === item.productId);
-        if (!product) return;
-        if (!counts[product.id]) counts[product.id] = { name: product.name, quantity: 0, revenue: 0 };
-        counts[product.id].quantity += item.quantity;
-        counts[product.id].revenue += item.quantity * item.unitPrice;
-      });
-    });
-    return Object.values(counts).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
-  }),
-  inventoryValuation: withStoreRead((store) =>
-    store.products.map((p) => ({
+  salesByMonth: async () => {
+    const summary = await apiClient.get('/dashboard/summary');
+    return summary.chartData;
+  },
+  topProducts: async () => {
+    // Placeholder - needs backend implementation
+    return [];
+  },
+  inventoryValuation: async () => {
+    const stockLevels = await apiClient.get('/inventory/stock-levels');
+    return stockLevels.map((p) => ({
       name: p.name,
       sku: p.sku,
       stock: p.stock,
       cost: p.cost,
-      value: p.stock * p.cost,
-      category: enrichProduct(p, store.categories).category,
-    }))
-  ),
-  lowStock: withStoreRead((store) =>
-    store.products
-      .filter((p) => p.stock <= p.reorderLevel)
-      .map((p) => enrichProduct(p, store.categories))
-  ),
+      value: p.value,
+      category: 'Unknown', // needs category join
+    }));
+  },
+  lowStock: async () => {
+    return apiClient.get('/inventory/stock-levels?low_stock=true');
+  },
 };
 
 // Settings
 export const settingsApi = {
-  get: withStoreRead((store) => store.settings),
-  update: withStore((store, data) => {
-    Object.assign(store.settings, data);
-    return store.settings;
-  }),
+  get: async () => {
+    // Placeholder - needs backend implementation
+    return {
+      companyName: 'Inventory Management',
+      currency: 'USD',
+      lowStockThreshold: 10,
+    };
+  },
+  update: async (data) => {
+    // Placeholder - needs backend implementation
+    return data;
+  },
   resetData: async () => {
-    await delay();
-    localStorage.removeItem('inventory_saas_data');
-    return loadStore();
+    // This should call backend to reset data
+    return {};
   },
 };
 
 // Notifications
 export const notificationsApi = {
-  list: withStoreRead((store) => store.notifications),
-  markRead: withStore((store, id) => {
-    const n = store.notifications.find((x) => x.id === Number(id));
-    if (n) n.read = true;
-    return n;
-  }),
-  markAllRead: withStore((store) => {
-    store.notifications.forEach((n) => { n.read = true; });
-    return store.notifications;
-  }),
+  list: async () => {
+    // Placeholder - needs backend implementation
+    return [];
+  },
+  markRead: async (id) => {
+    // Placeholder - needs backend implementation
+    return {};
+  },
+  markAllRead: async () => {
+    // Placeholder - needs backend implementation
+    return [];
+  },
 };
 
 // Global search
 export const searchApi = {
-  global: withStoreRead((store, query) => {
+  global: async (query) => {
     if (!query?.trim()) return { products: [], customers: [], suppliers: [], purchases: [], sales: [] };
-    const q = query.toLowerCase();
+    
+    // Search products
+    const products = await apiClient.get(`/products?search=${query}&pageSize=5`);
+    
+    // Search customers
+    const customers = await apiClient.get(`/customers?search=${query}&pageSize=5`);
+    
+    // Search suppliers
+    const suppliers = await apiClient.get(`/suppliers?search=${query}&pageSize=5`);
+    
+    // Search purchases
+    const purchases = await apiClient.get(`/purchases?search=${query}&pageSize=5`);
+    
+    // Search sales
+    const sales = await apiClient.get(`/sales?search=${query}&pageSize=5`);
+    
     return {
-      products: store.products
-        .filter((p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q))
-        .slice(0, 5)
-        .map((p) => enrichProduct(p, store.categories)),
-      customers: store.customers.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 5),
-      suppliers: store.suppliers.filter((s) => s.name.toLowerCase().includes(q)).slice(0, 5),
-      purchases: store.purchases
-        .map((p) => enrichPurchase(p, store))
-        .filter((p) => p.supplierName.toLowerCase().includes(q) || String(p.id).includes(q))
-        .slice(0, 5),
-      sales: store.sales
-        .map((s) => enrichSale(s, store))
-        .filter((s) => s.customerName.toLowerCase().includes(q) || String(s.id).includes(q))
-        .slice(0, 5),
+      products,
+      customers,
+      suppliers,
+      purchases,
+      sales,
     };
-  }),
+  },
 };
 
-export const productOptions = withStoreRead((store) =>
-  store.products
-    .filter((p) => p.status === 'Active')
-    .map((p) => ({ value: p.id, label: `${p.name} (${p.sku}) — Stock: ${p.stock}` }))
-);
+export const productOptions = async () => {
+  const products = await apiClient.get('/products?status=Active');
+  return products.map((p) => ({ value: p.id, label: `${p.name} (${p.sku}) — Stock: ${p.stock}` }));
+};
 
-export const categoryOptions = withStoreRead((store) =>
-  store.categories.map((c) => ({ value: c.id, label: c.name }))
-);
+export const categoryOptions = async () => {
+  const categories = await apiClient.get('/categories');
+  return categories.map((c) => ({ value: c.id, label: c.name }));
+};
 
 // Warehouses
 export const warehousesApi = {
@@ -446,90 +422,42 @@ export const warehousesApi = {
 
 // Serial Numbers
 export const serialNumbersApi = {
-  list: withStoreRead((store, { productId, status, page = 1, pageSize = 10 } = {}) => {
-    let items = store.serialNumbers.map((sn) => {
-      const product = store.products.find((p) => p.id === sn.productId);
-      const warehouse = store.warehouses.find((w) => w.id === sn.warehouseId);
-      return {
-        ...sn,
-        productName: product?.name || 'Unknown',
-        warehouseName: warehouse?.name || 'Unknown',
-      };
-    });
-    if (productId) items = items.filter((sn) => sn.productId === Number(productId));
-    if (status) items = items.filter((sn) => sn.status === status);
-    return paginate(items, page, pageSize);
-  }),
-  create: withStore((store, data) => {
-    const serial = {
-      id: getNextId(store, 'serialNumber'),
-      productId: Number(data.productId),
-      serialNumber: data.serialNumber,
-      status: data.status || 'in_stock',
-      purchaseDate: data.purchaseDate || new Date().toISOString().split('T')[0],
-      warehouseId: Number(data.warehouseId || 1),
-      saleId: data.saleId || null,
-    };
-    if (store.serialNumbers.some((s) => s.serialNumber === serial.serialNumber)) {
-      throw new Error('Serial number already exists');
-    }
-    store.serialNumbers.push(serial);
-    return serial;
-  }),
-  update: withStore((store, id, data) => {
-    const serial = store.serialNumbers.find((s) => s.id === Number(id));
-    if (!serial) throw new Error('Serial number not found');
-    Object.assign(serial, data);
-    return serial;
-  }),
-  delete: withStore((store, id) => {
-    store.serialNumbers = store.serialNumbers.filter((s) => s.id !== Number(id));
+  list: async ({ productId, status, page = 1, pageSize = 10 } = {}) => {
+    // Placeholder - needs backend implementation
+    return { items: [], total: 0, page, pageSize, totalPages: 0 };
+  },
+  create: async (data) => {
+    // Placeholder - needs backend implementation
+    return {};
+  },
+  update: async (id, data) => {
+    // Placeholder - needs backend implementation
+    return {};
+  },
+  delete: async (id) => {
+    // Placeholder - needs backend implementation
     return { success: true };
-  }),
+  },
 };
 
 // Batches
 export const batchesApi = {
-  list: withStoreRead((store, { productId, status, page = 1, pageSize = 10 } = {}) => {
-    let items = store.batches.map((b) => {
-      const product = store.products.find((p) => p.id === b.productId);
-      const warehouse = store.warehouses.find((w) => w.id === b.warehouseId);
-      return {
-        ...b,
-        productName: product?.name || 'Unknown',
-        warehouseName: warehouse?.name || 'Unknown',
-      };
-    });
-    if (productId) items = items.filter((b) => b.productId === Number(productId));
-    if (status) items = items.filter((b) => b.status === status);
-    return paginate(items, page, pageSize);
-  }),
-  create: withStore((store, data) => {
-    const batch = {
-      id: getNextId(store, 'batch'),
-      productId: Number(data.productId),
-      batchNumber: data.batchNumber,
-      quantity: Number(data.quantity),
-      expirationDate: data.expirationDate,
-      warehouseId: Number(data.warehouseId || 1),
-      status: data.status || 'in_stock',
-    };
-    if (store.batches.some((b) => b.batchNumber === batch.batchNumber)) {
-      throw new Error('Batch number already exists');
-    }
-    store.batches.push(batch);
-    return batch;
-  }),
-  update: withStore((store, id, data) => {
-    const batch = store.batches.find((b) => b.id === Number(id));
-    if (!batch) throw new Error('Batch not found');
-    Object.assign(batch, data);
-    return batch;
-  }),
-  delete: withStore((store, id) => {
-    store.batches = store.batches.filter((b) => b.id !== Number(id));
+  list: async ({ productId, status, page = 1, pageSize = 10 } = {}) => {
+    // Placeholder - needs backend implementation
+    return { items: [], total: 0, page, pageSize, totalPages: 0 };
+  },
+  create: async (data) => {
+    // Placeholder - needs backend implementation
+    return {};
+  },
+  update: async (id, data) => {
+    // Placeholder - needs backend implementation
+    return {};
+  },
+  delete: async (id) => {
+    // Placeholder - needs backend implementation
     return { success: true };
-  }),
+  },
 };
 
 // Quotes
@@ -559,156 +487,54 @@ export const quotesApi = {
 
 // Returns
 export const returnsApi = {
-  list: withStoreRead((store, { status, page = 1, pageSize = 10 } = {}) => {
-    let items = store.returns.map((r) => {
-      const customer = store.customers.find((c) => c.id === r.customerId);
-      const sale = store.sales.find((s) => s.id === r.saleId);
-      return {
-        ...r,
-        customerName: customer?.name || 'Unknown',
-        saleId: r.saleId,
-      };
-    });
-    if (status) items = items.filter((r) => r.status === status);
-    items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    return paginate(items, page, pageSize);
-  }),
-  get: withStoreRead((store, id) => {
-    const returnRecord = store.returns.find((r) => r.id === Number(id));
-    if (!returnRecord) throw new Error('Return not found');
-    const customer = store.customers.find((c) => c.id === returnRecord.customerId);
-    const items = returnRecord.items.map((item) => {
-      const product = store.products.find((p) => p.id === item.productId);
-      return {
-        ...item,
-        productName: product?.name || 'Unknown',
-      };
-    });
-    return {
-      ...returnRecord,
-      customerName: customer?.name || 'Unknown',
-      items,
-    };
-  }),
-  create: withStore((store, data) => {
-    const returnRecord = {
-      id: getNextId(store, 'return'),
-      saleId: Number(data.saleId),
-      customerId: Number(data.customerId),
-      status: data.status || 'pending',
-      items: data.items.map((i) => ({
-        productId: Number(i.productId),
-        quantity: Number(i.quantity),
-        reason: i.reason,
-      })),
-      refundAmount: Number(data.refundAmount || 0),
-      createdAt: new Date().toISOString(),
-      notes: data.notes || '',
-    };
-    store.returns.unshift(returnRecord);
-    return returnRecord;
-  }),
-  update: withStore((store, id, data) => {
-    const returnRecord = store.returns.find((r) => r.id === Number(id));
-    if (!returnRecord) throw new Error('Return not found');
-    const prevStatus = returnRecord.status;
-    Object.assign(returnRecord, {
-      status: data.status || returnRecord.status,
-      refundAmount: data.refundAmount !== undefined ? Number(data.refundAmount) : returnRecord.refundAmount,
-      notes: data.notes !== undefined ? data.notes : returnRecord.notes,
-    });
-    if (data.status === 'approved' && prevStatus !== 'approved') {
-      returnRecord.items.forEach((item) => {
-        recordMovement(store, {
-          type: 'in',
-          productId: item.productId,
-          quantity: item.quantity,
-          reason: `Return #${returnRecord.id} approved`,
-          reference: `RET-${returnRecord.id}`,
-        });
-      });
-    }
-    return returnRecord;
-  }),
-  delete: withStore((store, id) => {
-    store.returns = store.returns.filter((r) => r.id !== Number(id));
+  list: async ({ status, page = 1, pageSize = 10 } = {}) => {
+    // Placeholder - needs backend implementation
+    return { items: [], total: 0, page, pageSize, totalPages: 0 };
+  },
+  get: async (id) => {
+    // Placeholder - needs backend implementation
+    return {};
+  },
+  create: async (data) => {
+    // Placeholder - needs backend implementation
+    return {};
+  },
+  update: async (id, data) => {
+    // Placeholder - needs backend implementation
+    return {};
+  },
+  delete: async (id) => {
+    // Placeholder - needs backend implementation
     return { success: true };
-  }),
+  },
 };
 
 // Invoices
 export const invoicesApi = {
-  list: withStoreRead((store, { status, page = 1, pageSize = 10 } = {}) => {
-    let items = store.invoices.map((inv) => {
-      const customer = store.customers.find((c) => c.id === inv.customerId);
-      const sale = store.sales.find((s) => s.id === inv.saleId);
-      return {
-        ...inv,
-        customerName: customer?.name || 'Unknown',
-        saleId: inv.saleId,
-      };
-    });
-    if (status) items = items.filter((inv) => inv.status === status);
-    items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    return paginate(items, page, pageSize);
-  }),
-  get: withStoreRead((store, id) => {
-    const invoice = store.invoices.find((inv) => inv.id === Number(id));
-    if (!invoice) throw new Error('Invoice not found');
-    const customer = store.customers.find((c) => c.id === invoice.customerId);
-    const sale = store.sales.find((s) => s.id === invoice.saleId);
-    const items = sale?.items?.map((item) => {
-      const product = store.products.find((p) => p.id === item.productId);
-      return {
-        ...item,
-        productName: product?.name || 'Unknown',
-        lineTotal: item.quantity * item.unitPrice,
-      };
-    }) || [];
-    return {
-      ...invoice,
-      customerName: customer?.name || 'Unknown',
-      items,
-    };
-  }),
-  create: withStore((store, data) => {
-    const invoice = {
-      id: getNextId(store, 'invoice'),
-      saleId: Number(data.saleId),
-      customerId: Number(data.customerId),
-      status: data.status || 'pending',
-      total: Number(data.total),
-      dueDate: data.dueDate || '',
-      paidDate: data.paidDate || null,
-      createdAt: new Date().toISOString(),
-      notes: data.notes || '',
-    };
-    store.invoices.unshift(invoice);
-    return invoice;
-  }),
-  update: withStore((store, id, data) => {
-    const invoice = store.invoices.find((inv) => inv.id === Number(id));
-    if (!invoice) throw new Error('Invoice not found');
-    Object.assign(invoice, {
-      status: data.status || invoice.status,
-      total: data.total !== undefined ? Number(data.total) : invoice.total,
-      dueDate: data.dueDate || invoice.dueDate,
-      paidDate: data.paidDate !== undefined ? data.paidDate : invoice.paidDate,
-      notes: data.notes !== undefined ? data.notes : invoice.notes,
-    });
-    return invoice;
-  }),
-  markAsPaid: withStore((store, id) => {
-    const invoice = store.invoices.find((inv) => inv.id === Number(id));
-    if (!invoice) throw new Error('Invoice not found');
-    invoice.status = 'paid';
-    invoice.paidDate = new Date().toISOString().split('T')[0];
-    return invoice;
-  }),
-  delete: withStore((store, id) => {
-    store.invoices = store.invoices.filter((inv) => inv.id !== Number(id));
+  list: async ({ status, page = 1, pageSize = 10 } = {}) => {
+    // Placeholder - needs backend implementation
+    return { items: [], total: 0, page, pageSize, totalPages: 0 };
+  },
+  get: async (id) => {
+    // Placeholder - needs backend implementation
+    return {};
+  },
+  create: async (data) => {
+    // Placeholder - needs backend implementation
+    return {};
+  },
+  update: async (id, data) => {
+    // Placeholder - needs backend implementation
+    return {};
+  },
+  markAsPaid: async (id) => {
+    // Placeholder - needs backend implementation
+    return {};
+  },
+  delete: async (id) => {
+    // Placeholder - needs backend implementation
     return { success: true };
-  }),
+  },
 };
 
 // Users & RBAC
@@ -735,69 +561,35 @@ export const usersApi = {
 };
 
 export const rolesApi = {
-  list: withStoreRead((store) => store.roles),
-  get: withStoreRead((store, id) => {
-    const role = store.roles.find((r) => r.id === Number(id));
-    if (!role) throw new Error('Role not found');
-    return role;
-  }),
-  create: withStore((store, data) => {
-    const role = {
-      id: getNextId(store, 'role'),
-      name: data.name,
-      description: data.description || '',
-      permissions: data.permissions || [],
-    };
-    store.roles.push(role);
-    return role;
-  }),
-  update: withStore((store, id, data) => {
-    const role = store.roles.find((r) => r.id === Number(id));
-    if (!role) throw new Error('Role not found');
-    Object.assign(role, {
-      name: data.name || role.name,
-      description: data.description !== undefined ? data.description : role.description,
-      permissions: data.permissions || role.permissions,
-    });
-    return role;
-  }),
-  delete: withStore((store, id) => {
-    const role = store.roles.find((r) => r.id === Number(id));
-    if (!role) throw new Error('Role not found');
-    if (store.users.some((u) => u.role === role.name.toLowerCase())) {
-      throw new Error('Cannot delete role with assigned users');
-    }
-    store.roles = store.roles.filter((r) => r.id !== Number(id));
+  list: async () => {
+    // Placeholder - needs backend implementation
+    return [];
+  },
+  get: async (id) => {
+    // Placeholder - needs backend implementation
+    return {};
+  },
+  create: async (data) => {
+    // Placeholder - needs backend implementation
+    return {};
+  },
+  update: async (id, data) => {
+    // Placeholder - needs backend implementation
+    return {};
+  },
+  delete: async (id) => {
+    // Placeholder - needs backend implementation
     return { success: true };
-  }),
+  },
 };
 
 export const auditLogsApi = {
-  list: withStoreRead((store, { userId, action, entity, page = 1, pageSize = 20 } = {}) => {
-    let items = store.auditLogs.map((log) => {
-      const user = store.users.find((u) => u.id === log.userId);
-      return {
-        ...log,
-        userName: user?.name || 'Unknown',
-      };
-    });
-    if (userId) items = items.filter((log) => log.userId === Number(userId));
-    if (action) items = items.filter((log) => log.action === action);
-    if (entity) items = items.filter((log) => log.entity === entity);
-    items.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    return paginate(items, page, pageSize);
-  }),
-  create: withStore((store, data) => {
-    const log = {
-      id: getNextId(store, 'auditLog'),
-      userId: Number(data.userId),
-      action: data.action,
-      entity: data.entity,
-      entityId: Number(data.entityId),
-      details: data.details || '',
-      timestamp: new Date().toISOString(),
-    };
-    store.auditLogs.unshift(log);
-    return log;
-  }),
+  list: async ({ userId, action, entity, page = 1, pageSize = 20 } = {}) => {
+    // Placeholder - needs backend implementation
+    return { items: [], total: 0, page, pageSize, totalPages: 0 };
+  },
+  create: async (data) => {
+    // Placeholder - needs backend implementation
+    return {};
+  },
 };

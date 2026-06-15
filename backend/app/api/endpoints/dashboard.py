@@ -21,6 +21,18 @@ async def get_dashboard_summary(db: Session = Depends(get_db)):
     sales_revenue = db.query(Sale).all()
     total_revenue = sum(s.total for s in sales_revenue)
     
+    # Recent sales
+    recent_sales = db.query(Sale).order_by(Sale.created_at.desc()).limit(5).all()
+    recent_sales_data = []
+    for sale in recent_sales:
+        customer = db.query(Customer).filter(Customer.id == sale.customer_id).first()
+        recent_sales_data.append({
+            "id": sale.id,
+            "customerName": customer.name if customer else "Unknown",
+            "total": sale.total,
+            "status": sale.status,
+        })
+    
     # Purchase statistics
     total_purchases = db.query(Purchase).count()
     purchases_cost = db.query(Purchase).all()
@@ -32,17 +44,17 @@ async def get_dashboard_summary(db: Session = Depends(get_db)):
     
     return {
         "totalProducts": total_products,
-        "totalValue": total_inventory_value,
-        "lowStockProducts": low_stock_products,
         "totalSales": total_sales,
-        "totalPurchases": total_purchases,
-        "salesRevenue": total_revenue,
-        "purchasesCost": total_cost,
+        "totalRevenue": total_revenue,
+        "lowStockItems": low_stock_products,
         "totalCustomers": total_customers,
         "totalSuppliers": total_suppliers,
+        "inventoryValue": total_inventory_value,
         "chartData": [
-            {"month": "Jan", "sales": 1200, "purchases": 800},
-            {"month": "Feb", "sales": 1900, "purchases": 1200},
-            {"month": "Mar", "sales": 1500, "purchases": 900},
-        ]
+            {"name": "Jan", "sales": 1200, "revenue": 1200},
+            {"name": "Feb", "sales": 1900, "revenue": 1900},
+            {"name": "Mar", "sales": 1500, "revenue": 1500},
+        ],
+        "recentSales": recent_sales_data,
+        "recentMovements": []
     }
