@@ -48,7 +48,7 @@ class ProductSchema(ProductBase):
         from_attributes = True
 
 
-@router.get("/", response_model=List[ProductSchema])
+@router.get("/")
 async def list_products(
     search: Optional[str] = None,
     category_id: Optional[int] = None,
@@ -57,7 +57,7 @@ async def list_products(
     page_size: int = 10,
     db: Session = Depends(get_db)
 ):
-    """List all products"""
+    """List all products with pagination wrapper"""
     query = db.query(Product)
     
     if search:
@@ -72,9 +72,38 @@ async def list_products(
     if status:
         query = query.filter(Product.status == status)
     
+    total = query.count()
     offset = (page - 1) * page_size
     products = query.offset(offset).limit(page_size).all()
-    return products
+    
+    # Convert to dict manually
+    products_data = [
+        {
+            "id": p.id,
+            "name": p.name,
+            "sku": p.sku,
+            "price": p.price,
+            "cost": p.cost,
+            "stock": p.stock,
+            "reorder_level": p.reorder_level,
+            "status": p.status,
+            "description": p.description,
+            "warehouse_id": p.warehouse_id,
+            "category_id": p.category_id,
+            "barcode": p.barcode
+        }
+        for p in products
+    ]
+    
+    return {
+        "data": products_data,
+        "pagination": {
+            "page": page,
+            "pageSize": page_size,
+            "total": total,
+            "totalPages": (total + page_size - 1) // page_size
+        }
+    }
 
 
 @router.get("/{product_id}", response_model=ProductSchema)

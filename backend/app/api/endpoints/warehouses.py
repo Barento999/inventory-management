@@ -48,6 +48,30 @@ async def list_warehouses_no_slash(
     return await list_warehouses(db)
 
 
+@router.get("/")
+async def list_warehouses_paginated(
+    db: Session = Depends(get_db)
+):
+    """List all warehouses with pagination wrapper"""
+    warehouses = db.query(Warehouse).all()
+    
+    # Convert to dict manually
+    warehouses_data = [
+        {"id": w.id, "name": w.name, "location": w.location, "is_default": w.is_default}
+        for w in warehouses
+    ]
+    
+    return {
+        "data": warehouses_data,
+        "pagination": {
+            "page": 1,
+            "pageSize": len(warehouses),
+            "total": len(warehouses),
+            "totalPages": 1
+        }
+    }
+
+
 @router.get("/{warehouse_id}", response_model=WarehouseSchema)
 async def get_warehouse(warehouse_id: int, db: Session = Depends(get_db)):
     """Get a specific warehouse"""

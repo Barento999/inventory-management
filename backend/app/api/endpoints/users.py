@@ -48,6 +48,30 @@ async def list_users_no_slash(
     return await list_users(db)
 
 
+@router.get("/")
+async def list_users_paginated(
+    db: Session = Depends(get_db)
+):
+    """List all users with pagination wrapper"""
+    users = db.query(User).all()
+    
+    # Convert to dict manually
+    users_data = [
+        {"id": u.id, "email": u.email, "name": u.name, "role": u.role}
+        for u in users
+    ]
+    
+    return {
+        "data": users_data,
+        "pagination": {
+            "page": 1,
+            "pageSize": len(users),
+            "total": len(users),
+            "totalPages": 1
+        }
+    }
+
+
 @router.get("/{user_id}", response_model=UserSchema)
 async def get_user(user_id: int, db: Session = Depends(get_db)):
     """Get a specific user"""

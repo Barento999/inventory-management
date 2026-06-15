@@ -35,14 +35,14 @@ class SupplierSchema(SupplierBase):
         from_attributes = True
 
 
-@router.get("/", response_model=List[SupplierSchema])
+@router.get("/")
 async def list_suppliers(
     search: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
     db: Session = Depends(get_db)
 ):
-    """List all suppliers"""
+    """List all suppliers with pagination wrapper"""
     query = db.query(Supplier)
     
     if search:
@@ -51,9 +51,32 @@ async def list_suppliers(
             (Supplier.email.ilike(f"%{search}%"))
         )
     
+    total = query.count()
     offset = (page - 1) * page_size
     suppliers = query.offset(offset).limit(page_size).all()
-    return suppliers
+    
+    # Convert to dict manually
+    suppliers_data = [
+        {
+            "id": s.id,
+            "name": s.name,
+            "email": s.email,
+            "phone": s.phone,
+            "address": s.address,
+            "contact_person": s.contact_person
+        }
+        for s in suppliers
+    ]
+    
+    return {
+        "data": suppliers_data,
+        "pagination": {
+            "page": page,
+            "pageSize": page_size,
+            "total": total,
+            "totalPages": (total + page_size - 1) // page_size
+        }
+    }
 
 
 @router.get("/{supplier_id}", response_model=SupplierSchema)

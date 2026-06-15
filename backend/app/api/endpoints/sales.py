@@ -32,7 +32,7 @@ class SaleSchema(SaleBase):
         from_attributes = True
 
 
-@router.get("/", response_model=List[SaleSchema])
+@router.get("/")
 async def list_sales(
     search: Optional[str] = None,
     status: Optional[str] = None,
@@ -40,15 +40,37 @@ async def list_sales(
     page_size: int = 10,
     db: Session = Depends(get_db)
 ):
-    """List all sales"""
+    """List all sales with pagination wrapper"""
     query = db.query(Sale)
     
     if status:
         query = query.filter(Sale.status == status)
     
+    total = query.count()
     offset = (page - 1) * page_size
     sales = query.order_by(Sale.created_at.desc()).offset(offset).limit(page_size).all()
-    return sales
+    
+    # Convert to dict manually
+    sales_data = [
+        {
+            "id": s.id,
+            "customer_id": s.customer_id,
+            "total": s.total,
+            "status": s.status,
+            "notes": s.notes
+        }
+        for s in sales
+    ]
+    
+    return {
+        "data": sales_data,
+        "pagination": {
+            "page": page,
+            "pageSize": page_size,
+            "total": total,
+            "totalPages": (total + page_size - 1) // page_size
+        }
+    }
 
 
 @router.get("/{sale_id}", response_model=SaleSchema)

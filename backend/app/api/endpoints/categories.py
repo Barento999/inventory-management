@@ -29,25 +29,41 @@ class CategorySchema(CategoryBase):
         from_attributes = True
 
 
-@router.get("/", response_model=List[CategorySchema])
+@router.get("/")
 async def list_categories(
     search: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
     db: Session = Depends(get_db)
 ):
-    """List all categories"""
+    """List all categories with pagination wrapper"""
     query = db.query(Category)
     
     if search:
         query = query.filter(Category.name.ilike(f"%{search}%"))
     
+    total = query.count()
     offset = (page - 1) * page_size
     categories = query.offset(offset).limit(page_size).all()
-    return categories
+    
+    # Convert to dict manually
+    categories_data = [
+        {"id": c.id, "name": c.name, "description": c.description}
+        for c in categories
+    ]
+    
+    return {
+        "data": categories_data,
+        "pagination": {
+            "page": page,
+            "pageSize": page_size,
+            "total": total,
+            "totalPages": (total + page_size - 1) // page_size
+        }
+    }
 
 
-@router.get("", response_model=List[CategorySchema])
+@router.get("")
 async def list_categories_no_slash(
     search: Optional[str] = None,
     page: int = 1,

@@ -34,7 +34,7 @@ class QuoteSchema(QuoteBase):
         from_attributes = True
 
 
-@router.get("/", response_model=List[QuoteSchema])
+@router.get("/")
 async def list_quotes(
     search: Optional[str] = None,
     status: Optional[str] = None,
@@ -42,15 +42,38 @@ async def list_quotes(
     page_size: int = 10,
     db: Session = Depends(get_db)
 ):
-    """List all quotes"""
+    """List all quotes with pagination wrapper"""
     query = db.query(Quote)
     
     if status:
         query = query.filter(Quote.status == status)
     
+    total = query.count()
     offset = (page - 1) * page_size
     quotes = query.order_by(Quote.created_at.desc()).offset(offset).limit(page_size).all()
-    return quotes
+    
+    # Convert to dict manually
+    quotes_data = [
+        {
+            "id": q.id,
+            "customer_id": q.customer_id,
+            "total": q.total,
+            "status": q.status,
+            "valid_until": q.valid_until.isoformat() if q.valid_until else None,
+            "notes": q.notes
+        }
+        for q in quotes
+    ]
+    
+    return {
+        "data": quotes_data,
+        "pagination": {
+            "page": page,
+            "pageSize": page_size,
+            "total": total,
+            "totalPages": (total + page_size - 1) // page_size
+        }
+    }
 
 
 @router.get("/{quote_id}", response_model=QuoteSchema)

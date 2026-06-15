@@ -46,7 +46,7 @@ class PurchaseSchema(PurchaseBase):
         from_attributes = True
 
 
-@router.get("/", response_model=List[PurchaseSchema])
+@router.get("/")
 async def list_purchases(
     search: Optional[str] = None,
     status: Optional[str] = None,
@@ -54,15 +54,38 @@ async def list_purchases(
     page_size: int = 10,
     db: Session = Depends(get_db)
 ):
-    """List all purchases"""
+    """List all purchases with pagination wrapper"""
     query = db.query(Purchase)
     
     if status:
         query = query.filter(Purchase.status == status)
     
+    total = query.count()
     offset = (page - 1) * page_size
     purchases = query.order_by(Purchase.created_at.desc()).offset(offset).limit(page_size).all()
-    return purchases
+    
+    # Convert to dict manually
+    purchases_data = [
+        {
+            "id": p.id,
+            "supplier_id": p.supplier_id,
+            "total": p.total,
+            "status": p.status,
+            "expected_date": p.expected_date.isoformat() if p.expected_date else None,
+            "notes": p.notes
+        }
+        for p in purchases
+    ]
+    
+    return {
+        "data": purchases_data,
+        "pagination": {
+            "page": page,
+            "pageSize": page_size,
+            "total": total,
+            "totalPages": (total + page_size - 1) // page_size
+        }
+    }
 
 
 @router.get("/{purchase_id}", response_model=PurchaseSchema)

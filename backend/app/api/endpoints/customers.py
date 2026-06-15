@@ -33,14 +33,14 @@ class CustomerSchema(CustomerBase):
         from_attributes = True
 
 
-@router.get("/", response_model=List[CustomerSchema])
+@router.get("/")
 async def list_customers(
     search: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
     db: Session = Depends(get_db)
 ):
-    """List all customers"""
+    """List all customers with pagination wrapper"""
     query = db.query(Customer)
     
     if search:
@@ -49,9 +49,25 @@ async def list_customers(
             (Customer.email.ilike(f"%{search}%"))
         )
     
+    total = query.count()
     offset = (page - 1) * page_size
     customers = query.offset(offset).limit(page_size).all()
-    return customers
+    
+    # Convert to dict manually
+    customers_data = [
+        {"id": c.id, "name": c.name, "email": c.email, "phone": c.phone, "address": c.address}
+        for c in customers
+    ]
+    
+    return {
+        "data": customers_data,
+        "pagination": {
+            "page": page,
+            "pageSize": page_size,
+            "total": total,
+            "totalPages": (total + page_size - 1) // page_size
+        }
+    }
 
 
 @router.get("/{customer_id}", response_model=CustomerSchema)
