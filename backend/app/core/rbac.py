@@ -132,6 +132,18 @@ ROLE_PERMISSIONS = {
         "serial_numbers_view",
         "batches_view",
     ],
+    "user": [
+        "products_view",
+        "categories_view",
+        "warehouses_view",
+        "customers_view",
+        "suppliers_view",
+        "sales_view",
+        "purchases_view",
+        "inventory_view",
+        "reports_view",
+        "invoices_view",
+    ],
     "viewer": [
         "products_view",
         "categories_view",
