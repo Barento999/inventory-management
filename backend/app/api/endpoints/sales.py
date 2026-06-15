@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.rbac import require_permission
 from app.models import Sale
 
 router = APIRouter()
@@ -33,23 +34,27 @@ class SaleSchema(SaleBase):
 
 
 @router.get("")
+@require_permission("sales_view")
 async def list_sales_no_slash(
     search: Optional[str] = None,
     status: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all sales (no trailing slash)"""
-    return await list_sales(search, status, page, page_size, db)
+    return await list_sales(search, status, page, page_size, authorization, db)
 
 
 @router.get("/")
+@require_permission("sales_view")
 async def list_sales(
     search: Optional[str] = None,
     status: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all sales with pagination wrapper"""
@@ -86,7 +91,12 @@ async def list_sales(
 
 
 @router.get("/{sale_id}", response_model=SaleSchema)
-async def get_sale(sale_id: int, db: Session = Depends(get_db)):
+@require_permission("sales_view")
+async def get_sale(
+    sale_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Get a specific sale"""
     sale = db.query(Sale).filter(Sale.id == sale_id).first()
     if not sale:
@@ -95,7 +105,12 @@ async def get_sale(sale_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=SaleSchema)
-async def create_sale(sale: SaleCreate, db: Session = Depends(get_db)):
+@require_permission("sales_create")
+async def create_sale(
+    sale: SaleCreate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Create a new sale"""
     db_sale = Sale(**sale.dict())
     db.add(db_sale)
@@ -105,7 +120,13 @@ async def create_sale(sale: SaleCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{sale_id}", response_model=SaleSchema)
-async def update_sale(sale_id: int, sale: SaleUpdate, db: Session = Depends(get_db)):
+@require_permission("sales_update")
+async def update_sale(
+    sale_id: int,
+    sale: SaleUpdate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Update a sale"""
     db_sale = db.query(Sale).filter(Sale.id == sale_id).first()
     if not db_sale:
@@ -121,7 +142,12 @@ async def update_sale(sale_id: int, sale: SaleUpdate, db: Session = Depends(get_
 
 
 @router.delete("/{sale_id}")
-async def delete_sale(sale_id: int, db: Session = Depends(get_db)):
+@require_permission("sales_delete")
+async def delete_sale(
+    sale_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Delete a sale"""
     db_sale = db.query(Sale).filter(Sale.id == sale_id).first()
     if not db_sale:

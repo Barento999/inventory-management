@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.rbac import require_permission
 from app.models import Supplier
 
 router = APIRouter()
@@ -36,21 +37,25 @@ class SupplierSchema(SupplierBase):
 
 
 @router.get("")
+@require_permission("suppliers_view")
 async def list_suppliers_no_slash(
     search: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all suppliers (no trailing slash)"""
-    return await list_suppliers(search, page, page_size, db)
+    return await list_suppliers(search, page, page_size, authorization, db)
 
 
 @router.get("/")
+@require_permission("suppliers_view")
 async def list_suppliers(
     search: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all suppliers with pagination wrapper"""
@@ -91,7 +96,12 @@ async def list_suppliers(
 
 
 @router.get("/{supplier_id}", response_model=SupplierSchema)
-async def get_supplier(supplier_id: int, db: Session = Depends(get_db)):
+@require_permission("suppliers_view")
+async def get_supplier(
+    supplier_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Get a specific supplier"""
     supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
     if not supplier:
@@ -100,7 +110,12 @@ async def get_supplier(supplier_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=SupplierSchema)
-async def create_supplier(supplier: SupplierCreate, db: Session = Depends(get_db)):
+@require_permission("suppliers_create")
+async def create_supplier(
+    supplier: SupplierCreate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Create a new supplier"""
     db_supplier = Supplier(**supplier.dict())
     db.add(db_supplier)
@@ -110,9 +125,11 @@ async def create_supplier(supplier: SupplierCreate, db: Session = Depends(get_db
 
 
 @router.put("/{supplier_id}", response_model=SupplierSchema)
+@require_permission("suppliers_update")
 async def update_supplier(
-    supplier_id: int, 
-    supplier: SupplierUpdate, 
+    supplier_id: int,
+    supplier: SupplierUpdate,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """Update a supplier"""
@@ -130,7 +147,12 @@ async def update_supplier(
 
 
 @router.delete("/{supplier_id}")
-async def delete_supplier(supplier_id: int, db: Session = Depends(get_db)):
+@require_permission("suppliers_delete")
+async def delete_supplier(
+    supplier_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Delete a supplier"""
     db_supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
     if not db_supplier:

@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.rbac import require_permission
 from app.models import Return
 
 router = APIRouter()
@@ -35,10 +36,12 @@ class ReturnSchema(ReturnBase):
 
 
 @router.get("")
+@require_permission("returns_view")
 async def list_returns(
     status: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """Get all returns"""
@@ -78,7 +81,12 @@ async def list_returns(
 
 
 @router.post("")
-async def create_return(return_item: ReturnCreate, db: Session = Depends(get_db)):
+@require_permission("returns_create")
+async def create_return(
+    return_item: ReturnCreate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Create a new return"""
     db_return = Return(**return_item.dict())
     db.add(db_return)
@@ -98,7 +106,13 @@ async def create_return(return_item: ReturnCreate, db: Session = Depends(get_db)
 
 
 @router.put("/{return_id}")
-async def update_return(return_id: int, return_item: ReturnUpdate, db: Session = Depends(get_db)):
+@require_permission("returns_update")
+async def update_return(
+    return_id: int,
+    return_item: ReturnUpdate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Update a return"""
     db_return = db.query(Return).filter(Return.id == return_id).first()
     if not db_return:
@@ -124,7 +138,12 @@ async def update_return(return_id: int, return_item: ReturnUpdate, db: Session =
 
 
 @router.delete("/{return_id}")
-async def delete_return(return_id: int, db: Session = Depends(get_db)):
+@require_permission("returns_delete")
+async def delete_return(
+    return_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Delete a return"""
     db_return = db.query(Return).filter(Return.id == return_id).first()
     if not db_return:

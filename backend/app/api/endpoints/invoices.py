@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.rbac import require_permission
 from app.models import Invoice
 
 router = APIRouter()
@@ -36,10 +37,12 @@ class InvoiceSchema(InvoiceBase):
 
 
 @router.get("")
+@require_permission("invoices_view")
 async def list_invoices(
     status: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """Get all invoices"""
@@ -79,7 +82,12 @@ async def list_invoices(
 
 
 @router.post("")
-async def create_invoice(invoice: InvoiceCreate, db: Session = Depends(get_db)):
+@require_permission("invoices_create")
+async def create_invoice(
+    invoice: InvoiceCreate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Create a new invoice"""
     db_invoice = Invoice(**invoice.dict())
     db.add(db_invoice)
@@ -99,7 +107,13 @@ async def create_invoice(invoice: InvoiceCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{invoice_id}")
-async def update_invoice(invoice_id: int, invoice: InvoiceUpdate, db: Session = Depends(get_db)):
+@require_permission("invoices_update")
+async def update_invoice(
+    invoice_id: int,
+    invoice: InvoiceUpdate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Update an invoice"""
     db_invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
     if not db_invoice:
@@ -125,7 +139,12 @@ async def update_invoice(invoice_id: int, invoice: InvoiceUpdate, db: Session = 
 
 
 @router.put("/{invoice_id}/mark-paid")
-async def mark_invoice_paid(invoice_id: int, db: Session = Depends(get_db)):
+@require_permission("invoices_update")
+async def mark_invoice_paid(
+    invoice_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Mark invoice as paid"""
     db_invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
     if not db_invoice:
@@ -150,7 +169,12 @@ async def mark_invoice_paid(invoice_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/{invoice_id}")
-async def delete_invoice(invoice_id: int, db: Session = Depends(get_db)):
+@require_permission("invoices_delete")
+async def delete_invoice(
+    invoice_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Delete an invoice"""
     db_invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
     if not db_invoice:

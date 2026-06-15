@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.rbac import require_permission
 from app.models import Product
 
 router = APIRouter()
@@ -49,25 +50,29 @@ class ProductSchema(ProductBase):
 
 
 @router.get("")
+@require_permission("products_view")
 async def list_products_no_slash(
     search: Optional[str] = None,
     category_id: Optional[int] = None,
     status: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all products (no trailing slash)"""
-    return await list_products(search, category_id, status, page, page_size, db)
+    return await list_products(search, category_id, status, page, page_size, authorization, db)
 
 
 @router.get("/")
+@require_permission("products_view")
 async def list_products(
     search: Optional[str] = None,
     category_id: Optional[int] = None,
     status: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all products with pagination wrapper"""
@@ -120,7 +125,12 @@ async def list_products(
 
 
 @router.get("/{product_id}", response_model=ProductSchema)
-async def get_product(product_id: int, db: Session = Depends(get_db)):
+@require_permission("products_view")
+async def get_product(
+    product_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Get a specific product"""
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
@@ -129,7 +139,12 @@ async def get_product(product_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=ProductSchema)
-async def create_product(product: ProductCreate, db: Session = Depends(get_db)):
+@require_permission("products_create")
+async def create_product(
+    product: ProductCreate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Create a new product"""
     db_product = Product(**product.dict())
     db.add(db_product)
@@ -139,9 +154,11 @@ async def create_product(product: ProductCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{product_id}", response_model=ProductSchema)
+@require_permission("products_update")
 async def update_product(
     product_id: int, 
     product: ProductUpdate, 
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """Update a product"""
@@ -159,7 +176,12 @@ async def update_product(
 
 
 @router.delete("/{product_id}")
-async def delete_product(product_id: int, db: Session = Depends(get_db)):
+@require_permission("products_delete")
+async def delete_product(
+    product_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Delete a product"""
     db_product = db.query(Product).filter(Product.id == product_id).first()
     if not db_product:

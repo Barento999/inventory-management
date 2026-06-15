@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.rbac import require_permission
 from app.models import Product, StockMovement
 
 router = APIRouter()
@@ -17,9 +18,11 @@ class StockAdjustment(BaseModel):
 
 
 @router.get("/stock-levels")
+@require_permission("inventory_view")
 async def get_stock_levels(
     search: Optional[str] = None,
     low_stock: bool = False,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """Get stock levels for all products"""
@@ -53,11 +56,13 @@ async def get_stock_levels(
 
 
 @router.get("/movements")
+@require_permission("inventory_movements")
 async def get_stock_movements(
     search: Optional[str] = None,
     type: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """Get stock movements"""
@@ -94,8 +99,10 @@ async def get_stock_movements(
 
 
 @router.post("/adjust")
+@require_permission("inventory_adjust")
 async def adjust_stock(
     adjustment: StockAdjustment,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """Adjust stock for a product"""

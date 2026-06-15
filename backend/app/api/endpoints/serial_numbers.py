@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.rbac import require_permission
 from app.models import SerialNumber
 
 router = APIRouter()
@@ -34,11 +35,13 @@ class SerialNumberSchema(SerialNumberBase):
 
 
 @router.get("")
+@require_permission("serial_numbers_view")
 async def list_serial_numbers(
     product_id: Optional[int] = None,
     status: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """Get all serial numbers"""
@@ -80,7 +83,12 @@ async def list_serial_numbers(
 
 
 @router.post("")
-async def create_serial_number(serial: SerialNumberCreate, db: Session = Depends(get_db)):
+@require_permission("serial_numbers_create")
+async def create_serial_number(
+    serial: SerialNumberCreate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Create a new serial number"""
     db_serial = SerialNumber(**serial.dict())
     db.add(db_serial)
@@ -99,7 +107,13 @@ async def create_serial_number(serial: SerialNumberCreate, db: Session = Depends
 
 
 @router.put("/{serial_id}")
-async def update_serial_number(serial_id: int, serial: SerialNumberUpdate, db: Session = Depends(get_db)):
+@require_permission("serial_numbers_update")
+async def update_serial_number(
+    serial_id: int,
+    serial: SerialNumberUpdate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Update a serial number"""
     db_serial = db.query(SerialNumber).filter(SerialNumber.id == serial_id).first()
     if not db_serial:
@@ -124,7 +138,12 @@ async def update_serial_number(serial_id: int, serial: SerialNumberUpdate, db: S
 
 
 @router.delete("/{serial_id}")
-async def delete_serial_number(serial_id: int, db: Session = Depends(get_db)):
+@require_permission("serial_numbers_delete")
+async def delete_serial_number(
+    serial_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Delete a serial number"""
     db_serial = db.query(SerialNumber).filter(SerialNumber.id == serial_id).first()
     if not db_serial:

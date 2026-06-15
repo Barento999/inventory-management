@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.rbac import require_permission
 from app.models import Purchase
 
 router = APIRouter()
@@ -47,23 +48,27 @@ class PurchaseSchema(PurchaseBase):
 
 
 @router.get("")
+@require_permission("purchases_view")
 async def list_purchases_no_slash(
     search: Optional[str] = None,
     status: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all purchases (no trailing slash)"""
-    return await list_purchases(search, status, page, page_size, db)
+    return await list_purchases(search, status, page, page_size, authorization, db)
 
 
 @router.get("/")
+@require_permission("purchases_view")
 async def list_purchases(
     search: Optional[str] = None,
     status: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all purchases with pagination wrapper"""
@@ -101,7 +106,12 @@ async def list_purchases(
 
 
 @router.get("/{purchase_id}", response_model=PurchaseSchema)
-async def get_purchase(purchase_id: int, db: Session = Depends(get_db)):
+@require_permission("purchases_view")
+async def get_purchase(
+    purchase_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Get a specific purchase"""
     purchase = db.query(Purchase).filter(Purchase.id == purchase_id).first()
     if not purchase:
@@ -110,7 +120,12 @@ async def get_purchase(purchase_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=PurchaseSchema)
-async def create_purchase(purchase: PurchaseCreate, db: Session = Depends(get_db)):
+@require_permission("purchases_create")
+async def create_purchase(
+    purchase: PurchaseCreate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Create a new purchase"""
     db_purchase = Purchase(**purchase.dict())
     db.add(db_purchase)
@@ -120,9 +135,11 @@ async def create_purchase(purchase: PurchaseCreate, db: Session = Depends(get_db
 
 
 @router.put("/{purchase_id}", response_model=PurchaseSchema)
+@require_permission("purchases_update")
 async def update_purchase(
-    purchase_id: int, 
-    purchase: PurchaseUpdate, 
+    purchase_id: int,
+    purchase: PurchaseUpdate,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """Update a purchase"""
@@ -140,7 +157,12 @@ async def update_purchase(
 
 
 @router.delete("/{purchase_id}")
-async def delete_purchase(purchase_id: int, db: Session = Depends(get_db)):
+@require_permission("purchases_delete")
+async def delete_purchase(
+    purchase_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Delete a purchase"""
     db_purchase = db.query(Purchase).filter(Purchase.id == purchase_id).first()
     if not db_purchase:

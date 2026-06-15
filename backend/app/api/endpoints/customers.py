@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.rbac import require_permission
 from app.models import Customer
 
 router = APIRouter()
@@ -34,21 +35,25 @@ class CustomerSchema(CustomerBase):
 
 
 @router.get("")
+@require_permission("customers_view")
 async def list_customers_no_slash(
     search: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all customers (no trailing slash)"""
-    return await list_customers(search, page, page_size, db)
+    return await list_customers(search, page, page_size, authorization, db)
 
 
 @router.get("/")
+@require_permission("customers_view")
 async def list_customers(
     search: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all customers with pagination wrapper"""
@@ -82,7 +87,12 @@ async def list_customers(
 
 
 @router.get("/{customer_id}", response_model=CustomerSchema)
-async def get_customer(customer_id: int, db: Session = Depends(get_db)):
+@require_permission("customers_view")
+async def get_customer(
+    customer_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Get a specific customer"""
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
     if not customer:
@@ -91,7 +101,12 @@ async def get_customer(customer_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=CustomerSchema)
-async def create_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
+@require_permission("customers_create")
+async def create_customer(
+    customer: CustomerCreate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Create a new customer"""
     db_customer = Customer(**customer.dict())
     db.add(db_customer)
@@ -101,9 +116,11 @@ async def create_customer(customer: CustomerCreate, db: Session = Depends(get_db
 
 
 @router.put("/{customer_id}", response_model=CustomerSchema)
+@require_permission("customers_update")
 async def update_customer(
-    customer_id: int, 
-    customer: CustomerUpdate, 
+    customer_id: int,
+    customer: CustomerUpdate,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """Update a customer"""
@@ -121,7 +138,12 @@ async def update_customer(
 
 
 @router.delete("/{customer_id}")
-async def delete_customer(customer_id: int, db: Session = Depends(get_db)):
+@require_permission("customers_delete")
+async def delete_customer(
+    customer_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Delete a customer"""
     db_customer = db.query(Customer).filter(Customer.id == customer_id).first()
     if not db_customer:

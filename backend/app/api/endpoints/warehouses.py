@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.rbac import require_permission
 from app.models import Warehouse
 
 router = APIRouter()
@@ -32,7 +33,9 @@ class WarehouseSchema(WarehouseBase):
 
 
 @router.get("/", response_model=List[WarehouseSchema])
+@require_permission("warehouses_view")
 async def list_warehouses(
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all warehouses"""
@@ -41,15 +44,19 @@ async def list_warehouses(
 
 
 @router.get("", response_model=List[WarehouseSchema])
+@require_permission("warehouses_view")
 async def list_warehouses_no_slash(
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all warehouses (no trailing slash)"""
-    return await list_warehouses(db)
+    return await list_warehouses(authorization, db)
 
 
 @router.get("/")
+@require_permission("warehouses_view")
 async def list_warehouses_paginated(
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all warehouses with pagination wrapper"""
@@ -73,7 +80,12 @@ async def list_warehouses_paginated(
 
 
 @router.get("/{warehouse_id}", response_model=WarehouseSchema)
-async def get_warehouse(warehouse_id: int, db: Session = Depends(get_db)):
+@require_permission("warehouses_view")
+async def get_warehouse(
+    warehouse_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Get a specific warehouse"""
     warehouse = db.query(Warehouse).filter(Warehouse.id == warehouse_id).first()
     if not warehouse:
@@ -82,7 +94,12 @@ async def get_warehouse(warehouse_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=WarehouseSchema)
-async def create_warehouse(warehouse: WarehouseCreate, db: Session = Depends(get_db)):
+@require_permission("warehouses_create")
+async def create_warehouse(
+    warehouse: WarehouseCreate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Create a new warehouse"""
     db_warehouse = Warehouse(**warehouse.dict())
     
@@ -97,9 +114,11 @@ async def create_warehouse(warehouse: WarehouseCreate, db: Session = Depends(get
 
 
 @router.put("/{warehouse_id}", response_model=WarehouseSchema)
+@require_permission("warehouses_update")
 async def update_warehouse(
-    warehouse_id: int, 
-    warehouse: WarehouseUpdate, 
+    warehouse_id: int,
+    warehouse: WarehouseUpdate,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """Update a warehouse"""
@@ -122,7 +141,12 @@ async def update_warehouse(
 
 
 @router.delete("/{warehouse_id}")
-async def delete_warehouse(warehouse_id: int, db: Session = Depends(get_db)):
+@require_permission("warehouses_delete")
+async def delete_warehouse(
+    warehouse_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Delete a warehouse"""
     db_warehouse = db.query(Warehouse).filter(Warehouse.id == warehouse_id).first()
     if not db_warehouse:

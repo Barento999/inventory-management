@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.rbac import require_permission
 from app.models import Category
 
 router = APIRouter()
@@ -30,10 +31,12 @@ class CategorySchema(CategoryBase):
 
 
 @router.get("/")
+@require_permission("categories_view")
 async def list_categories(
     search: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all categories with pagination wrapper"""
@@ -64,18 +67,25 @@ async def list_categories(
 
 
 @router.get("")
+@require_permission("categories_view")
 async def list_categories_no_slash(
     search: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all categories (no trailing slash)"""
-    return await list_categories(search, page, page_size, db)
+    return await list_categories(search, page, page_size, authorization, db)
 
 
 @router.get("/{category_id}", response_model=CategorySchema)
-async def get_category(category_id: int, db: Session = Depends(get_db)):
+@require_permission("categories_view")
+async def get_category(
+    category_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Get a specific category"""
     category = db.query(Category).filter(Category.id == category_id).first()
     if not category:
@@ -84,7 +94,12 @@ async def get_category(category_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=CategorySchema)
-async def create_category(category: CategoryCreate, db: Session = Depends(get_db)):
+@require_permission("categories_create")
+async def create_category(
+    category: CategoryCreate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Create a new category"""
     db_category = Category(**category.dict())
     db.add(db_category)
@@ -94,9 +109,11 @@ async def create_category(category: CategoryCreate, db: Session = Depends(get_db
 
 
 @router.put("/{category_id}", response_model=CategorySchema)
+@require_permission("categories_update")
 async def update_category(
-    category_id: int, 
-    category: CategoryUpdate, 
+    category_id: int,
+    category: CategoryUpdate,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """Update a category"""
@@ -114,7 +131,12 @@ async def update_category(
 
 
 @router.delete("/{category_id}")
-async def delete_category(category_id: int, db: Session = Depends(get_db)):
+@require_permission("categories_delete")
+async def delete_category(
+    category_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Delete a category"""
     db_category = db.query(Category).filter(Category.id == category_id).first()
     if not db_category:

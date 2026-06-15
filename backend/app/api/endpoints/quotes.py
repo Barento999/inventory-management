@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.rbac import require_permission
 from app.models import Quote
 
 router = APIRouter()
@@ -35,23 +36,27 @@ class QuoteSchema(QuoteBase):
 
 
 @router.get("")
+@require_permission("sales_view")
 async def list_quotes_no_slash(
     search: Optional[str] = None,
     status: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all quotes (no trailing slash)"""
-    return await list_quotes(search, status, page, page_size, db)
+    return await list_quotes(search, status, page, page_size, authorization, db)
 
 
 @router.get("/")
+@require_permission("sales_view")
 async def list_quotes(
     search: Optional[str] = None,
     status: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all quotes with pagination wrapper"""
@@ -89,7 +94,12 @@ async def list_quotes(
 
 
 @router.get("/{quote_id}", response_model=QuoteSchema)
-async def get_quote(quote_id: int, db: Session = Depends(get_db)):
+@require_permission("sales_view")
+async def get_quote(
+    quote_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Get a specific quote"""
     quote = db.query(Quote).filter(Quote.id == quote_id).first()
     if not quote:
@@ -98,7 +108,12 @@ async def get_quote(quote_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=QuoteSchema)
-async def create_quote(quote: QuoteCreate, db: Session = Depends(get_db)):
+@require_permission("sales_create")
+async def create_quote(
+    quote: QuoteCreate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Create a new quote"""
     db_quote = Quote(**quote.dict())
     db.add(db_quote)
@@ -108,7 +123,13 @@ async def create_quote(quote: QuoteCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{quote_id}", response_model=QuoteSchema)
-async def update_quote(quote_id: int, quote: QuoteUpdate, db: Session = Depends(get_db)):
+@require_permission("sales_update")
+async def update_quote(
+    quote_id: int,
+    quote: QuoteUpdate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Update a quote"""
     db_quote = db.query(Quote).filter(Quote.id == quote_id).first()
     if not db_quote:
@@ -124,7 +145,13 @@ async def update_quote(quote_id: int, quote: QuoteUpdate, db: Session = Depends(
 
 
 @router.put("/{quote_id}/status")
-async def update_quote_status(quote_id: int, status: str, db: Session = Depends(get_db)):
+@require_permission("sales_update")
+async def update_quote_status(
+    quote_id: int,
+    status: str,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Update quote status"""
     db_quote = db.query(Quote).filter(Quote.id == quote_id).first()
     if not db_quote:
@@ -145,7 +172,12 @@ async def update_quote_status(quote_id: int, status: str, db: Session = Depends(
 
 
 @router.delete("/{quote_id}")
-async def delete_quote(quote_id: int, db: Session = Depends(get_db)):
+@require_permission("sales_delete")
+async def delete_quote(
+    quote_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Delete a quote"""
     db_quote = db.query(Quote).filter(Quote.id == quote_id).first()
     if not db_quote:

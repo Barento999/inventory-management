@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from typing import Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.rbac import require_permission, require_role
 from app.models import Settings
 
 router = APIRouter()
@@ -30,7 +31,11 @@ class SettingsSchema(SettingsBase):
 
 
 @router.get("")
-async def get_settings(db: Session = Depends(get_db)):
+@require_permission("settings_view")
+async def get_settings(
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Get current settings"""
     settings = db.query(Settings).first()
     if not settings:
@@ -53,7 +58,12 @@ async def get_settings(db: Session = Depends(get_db)):
 
 
 @router.put("")
-async def update_settings(settings_update: SettingsUpdate, db: Session = Depends(get_db)):
+@require_permission("settings_update")
+async def update_settings(
+    settings_update: SettingsUpdate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Update settings"""
     settings = db.query(Settings).first()
     if not settings:
@@ -82,7 +92,12 @@ async def update_settings(settings_update: SettingsUpdate, db: Session = Depends
 
 
 @router.post("/reset")
-async def reset_data(db: Session = Depends(get_db)):
+@require_permission("settings_reset")
+@require_role("admin")
+async def reset_data(
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Reset all data (dangerous operation)"""
     # This would reset all data - for now just return success
     return {"message": "Data reset functionality not implemented"}

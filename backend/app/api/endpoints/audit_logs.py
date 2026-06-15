@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.rbac import require_permission
 from app.models import AuditLog
 
 router = APIRouter()
@@ -29,9 +30,11 @@ class AuditLogSchema(AuditLogBase):
 
 
 @router.get("")
+@require_permission("audit_logs_view")
 async def list_audit_logs(
     page: int = 1,
     page_size: int = 10,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """Get all audit logs"""
@@ -66,7 +69,12 @@ async def list_audit_logs(
 
 
 @router.post("")
-async def create_audit_log(log: AuditLogCreate, db: Session = Depends(get_db)):
+@require_permission("audit_logs_view")
+async def create_audit_log(
+    log: AuditLogCreate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Create a new audit log"""
     db_log = AuditLog(**log.dict())
     db.add(db_log)

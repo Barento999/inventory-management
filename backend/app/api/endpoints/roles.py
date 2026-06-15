@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.rbac import require_permission, require_role
 from app.models import Role
 
 router = APIRouter()
@@ -32,7 +33,12 @@ class RoleSchema(RoleBase):
 
 
 @router.get("")
-async def list_roles(db: Session = Depends(get_db)):
+@require_permission("roles_view")
+@require_role("admin")
+async def list_roles(
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Get all roles"""
     roles = db.query(Role).all()
     
@@ -51,7 +57,13 @@ async def list_roles(db: Session = Depends(get_db)):
 
 
 @router.get("/{role_id}")
-async def get_role(role_id: int, db: Session = Depends(get_db)):
+@require_permission("roles_view")
+@require_role("admin")
+async def get_role(
+    role_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Get a specific role"""
     role = db.query(Role).filter(Role.id == role_id).first()
     if not role:
@@ -66,7 +78,13 @@ async def get_role(role_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("")
-async def create_role(role: RoleCreate, db: Session = Depends(get_db)):
+@require_permission("roles_create")
+@require_role("admin")
+async def create_role(
+    role: RoleCreate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Create a new role"""
     db_role = Role(**role.dict())
     db.add(db_role)
@@ -82,7 +100,14 @@ async def create_role(role: RoleCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{role_id}")
-async def update_role(role_id: int, role: RoleUpdate, db: Session = Depends(get_db)):
+@require_permission("roles_update")
+@require_role("admin")
+async def update_role(
+    role_id: int,
+    role: RoleUpdate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Update a role"""
     db_role = db.query(Role).filter(Role.id == role_id).first()
     if not db_role:
@@ -104,7 +129,13 @@ async def update_role(role_id: int, role: RoleUpdate, db: Session = Depends(get_
 
 
 @router.delete("/{role_id}")
-async def delete_role(role_id: int, db: Session = Depends(get_db)):
+@require_permission("roles_delete")
+@require_role("admin")
+async def delete_role(
+    role_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Delete a role"""
     db_role = db.query(Role).filter(Role.id == role_id).first()
     if not db_role:

@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.security import hash_password, verify_token
+from app.core.rbac import require_permission, require_role
 from app.models import User
 
 router = APIRouter()
@@ -32,7 +34,9 @@ class UserSchema(UserBase):
 
 
 @router.get("/", response_model=List[UserSchema])
+@require_permission("users_view")
 async def list_users(
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all users (excluding password)"""
@@ -41,15 +45,19 @@ async def list_users(
 
 
 @router.get("", response_model=List[UserSchema])
+@require_permission("users_view")
 async def list_users_no_slash(
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all users (no trailing slash)"""
-    return await list_users(db)
+    return await list_users(authorization, db)
 
 
 @router.get("/")
+@require_permission("users_view")
 async def list_users_paginated(
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """List all users with pagination wrapper"""
@@ -73,7 +81,12 @@ async def list_users_paginated(
 
 
 @router.get("/{user_id}", response_model=UserSchema)
-async def get_user(user_id: int, db: Session = Depends(get_db)):
+@require_permission("users_view")
+async def get_user(
+    user_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Get a specific user"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -82,7 +95,12 @@ async def get_user(user_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=UserSchema)
-async def create_user(user: UserCreate, db: Session = Depends(get_db)):
+@require_permission("users_create")
+async def create_user(
+    user: UserCreate,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Create a new user"""
     from app.core.security import hash_password
     
@@ -104,9 +122,11 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{user_id}", response_model=UserSchema)
+@require_permission("users_update")
 async def update_user(
-    user_id: int, 
-    user: UserUpdate, 
+    user_id: int,
+    user: UserUpdate,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """Update a user"""
@@ -130,7 +150,12 @@ async def update_user(
 
 
 @router.delete("/{user_id}")
-async def delete_user(user_id: int, db: Session = Depends(get_db)):
+@require_permission("users_delete")
+async def delete_user(
+    user_id: int,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Delete a user"""
     db_user = db.query(User).filter(User.id == user_id).first()
     if not db_user:
