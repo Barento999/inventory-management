@@ -35,7 +35,6 @@ class QuoteSchema(QuoteBase):
         from_attributes = True
 
 
-@router.get("")
 @require_permission("sales_view")
 async def list_quotes_no_slash(
     search: Optional[str] = None,
@@ -46,7 +45,6 @@ async def list_quotes_no_slash(
     db: Session = Depends(get_db)
 ):
     """List all quotes (no trailing slash)"""
-    return await list_quotes(search, status, page, page_size, authorization, db)
 
 
 @router.get("/")

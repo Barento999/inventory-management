@@ -30,7 +30,6 @@ class SettingsSchema(SettingsBase):
         from_attributes = True
 
 
-@router.get("")
 @require_permission("settings_view")
 async def get_settings(
     authorization: str = Header(None),

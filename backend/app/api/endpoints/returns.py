@@ -35,7 +35,6 @@ class ReturnSchema(ReturnBase):
         from_attributes = True
 
 
-@router.get("")
 @require_permission("returns_view")
 async def list_returns(
     status: Optional[str] = None,

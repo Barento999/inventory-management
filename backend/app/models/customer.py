@@ -11,6 +11,3 @@ class Customer(Base):
     phone = Column(String(20))
     address = Column(String(500))
     created_at = Column(DateTime, default=func.now())
-
-    class Config:
-        from_attributes = True

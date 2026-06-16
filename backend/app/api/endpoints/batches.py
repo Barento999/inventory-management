@@ -34,7 +34,6 @@ class BatchSchema(BatchBase):
         from_attributes = True
 
 
-@router.get("")
 @require_permission("batches_view")
 async def list_batches(
     product_id: Optional[int] = None,

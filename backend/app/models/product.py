@@ -19,6 +19,3 @@ class Product(Base):
     warehouse_id = Column(Integer, ForeignKey("warehouses.id"))
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
-
-    class Config:
-        from_attributes = True

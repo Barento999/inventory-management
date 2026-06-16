@@ -10,6 +10,3 @@ class Warehouse(Base):
     location = Column(String(500))
     is_default = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now())
-
-    class Config:
-        from_attributes = True

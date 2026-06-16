@@ -29,7 +29,6 @@ class AuditLogSchema(AuditLogBase):
         from_attributes = True
 
 
-@router.get("")
 @require_permission("audit_logs_view")
 async def list_audit_logs(
     page: int = 1,

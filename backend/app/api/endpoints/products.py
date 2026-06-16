@@ -49,21 +49,6 @@ class ProductSchema(ProductBase):
         from_attributes = True
 
 
-@router.get("")
-@require_permission("products_view")
-async def list_products_no_slash(
-    search: Optional[str] = None,
-    category_id: Optional[int] = None,
-    status: Optional[str] = None,
-    page: int = 1,
-    page_size: int = 10,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db)
-):
-    """List all products (no trailing slash)"""
-    return await list_products(search, category_id, status, page, page_size, authorization, db)
-
-
 @router.get("/")
 @require_permission("products_view")
 async def list_products(

@@ -36,7 +36,11 @@ import { useAuth } from '../context/AuthContext';
 function RequireAuth({ children }) {
   const { user, loading } = useAuth();
   if (loading) {
-    return null; // or return a loading spinner
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
   }
   return user ? children : <Navigate to="/login" replace />;
 }
@@ -44,7 +48,11 @@ function RequireAuth({ children }) {
 function GuestOnly({ children }) {
   const { user, loading } = useAuth();
   if (loading) {
-    return null; // or return a loading spinner
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
   }
   return user ? <Navigate to="/" replace /> : children;
 }

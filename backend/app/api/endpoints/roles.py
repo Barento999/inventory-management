@@ -32,7 +32,6 @@ class RoleSchema(RoleBase):
         from_attributes = True
 
 
-@router.get("")
 @require_permission("roles_view")
 @require_role("admin")
 async def list_roles(

@@ -36,7 +36,6 @@ class InvoiceSchema(InvoiceBase):
         from_attributes = True
 
 
-@router.get("")
 @require_permission("invoices_view")
 async def list_invoices(
     status: Optional[str] = None,

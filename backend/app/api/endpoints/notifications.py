@@ -27,7 +27,6 @@ class NotificationSchema(NotificationBase):
         from_attributes = True
 
 
-@router.get("")
 async def list_notifications(db: Session = Depends(get_db)):
     """Get all notifications"""
     notifications = db.query(Notification).order_by(Notification.created_at.desc()).all()

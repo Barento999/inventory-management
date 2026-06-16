@@ -37,10 +37,19 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      const data = await response.json();
+      
+      // Try to parse JSON, but handle non-JSON responses
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
 
       if (!response.ok) {
-        throw new Error(data.detail || 'API request failed');
+        const errorMsg = typeof data === 'object' ? data.detail : data;
+        throw new Error(errorMsg || `HTTP ${response.status}`);
       }
 
       return data;

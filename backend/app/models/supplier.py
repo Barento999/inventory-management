@@ -12,6 +12,3 @@ class Supplier(Base):
     address = Column(String(500))
     contact_person = Column(String(255))
     created_at = Column(DateTime, default=func.now())
-
-    class Config:
-        from_attributes = True

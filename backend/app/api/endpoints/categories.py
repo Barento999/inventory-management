@@ -66,7 +66,6 @@ async def list_categories(
     }
 
 
-@router.get("")
 @require_permission("categories_view")
 async def list_categories_no_slash(
     search: Optional[str] = None,
@@ -76,7 +75,6 @@ async def list_categories_no_slash(
     db: Session = Depends(get_db)
 ):
     """List all categories (no trailing slash)"""
-    return await list_categories(search, page, page_size, authorization, db)
 
 
 @router.get("/{category_id}", response_model=CategorySchema)

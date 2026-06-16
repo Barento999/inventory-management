@@ -12,6 +12,3 @@ class Quote(Base):
     valid_until = Column(Date)
     notes = Column(Text)
     created_at = Column(DateTime, default=func.now())
-
-    class Config:
-        from_attributes = True

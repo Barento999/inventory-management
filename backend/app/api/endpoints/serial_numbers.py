@@ -34,7 +34,6 @@ class SerialNumberSchema(SerialNumberBase):
         from_attributes = True
 
 
-@router.get("")
 @require_permission("serial_numbers_view")
 async def list_serial_numbers(
     product_id: Optional[int] = None,

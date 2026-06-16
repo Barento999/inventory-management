@@ -34,7 +34,6 @@ class CustomerSchema(CustomerBase):
         from_attributes = True
 
 
-@router.get("")
 @require_permission("customers_view")
 async def list_customers_no_slash(
     search: Optional[str] = None,
@@ -44,7 +43,6 @@ async def list_customers_no_slash(
     db: Session = Depends(get_db)
 ):
     """List all customers (no trailing slash)"""
-    return await list_customers(search, page, page_size, authorization, db)
 
 
 @router.get("/")

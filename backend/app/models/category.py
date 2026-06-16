@@ -9,6 +9,3 @@ class Category(Base):
     name = Column(String(255), unique=True, nullable=False, index=True)
     description = Column(Text)
     created_at = Column(DateTime, default=func.now())
-
-    class Config:
-        from_attributes = True

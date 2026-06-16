@@ -12,6 +12,3 @@ class Sale(Base):
     notes = Column(Text)
     user_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, default=func.now())
-
-    class Config:
-        from_attributes = True
