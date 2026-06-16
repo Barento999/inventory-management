@@ -47,6 +47,12 @@ async def list_notifications(db: Session = Depends(get_db)):
     return notifications_data
 
 
+@router.get("/")
+async def get_notifications(db: Session = Depends(get_db)):
+    """Get all notifications"""
+    return await list_notifications(db)
+
+
 @router.put("/{notification_id}/read")
 async def mark_read(notification_id: int, db: Session = Depends(get_db)):
     """Mark notification as read"""
