@@ -3,8 +3,8 @@ from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.rbac import require_permission
-from app.models import Product, StockMovement
+from app.core.rbac import require_permission, check_permission
+from app.models import Product, StockMovement, User
 
 router = APIRouter()
 
@@ -22,8 +22,7 @@ class StockAdjustment(BaseModel):
 async def get_stock_levels(
     search: Optional[str] = None,
     low_stock: bool = False,
-    authorization: str = Header(None),
-    current_user = None,
+    current_user: User = Depends(check_permission("inventory_view")),
     db: Session = Depends(get_db)
 ):
     """Get stock levels for all products"""
@@ -63,8 +62,7 @@ async def get_stock_movements(
     type: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
-    current_user = None,
+    current_user: User = Depends(check_permission("inventory_movements")),
     db: Session = Depends(get_db)
 ):
     """Get stock movements"""
@@ -104,8 +102,7 @@ async def get_stock_movements(
 @require_permission("inventory_adjust")
 async def adjust_stock(
     adjustment: StockAdjustment,
-    authorization: str = Header(None),
-    current_user = None,
+    current_user: User = Depends(check_permission("inventory_adjust")),
     db: Session = Depends(get_db)
 ):
     """Adjust stock for a product"""

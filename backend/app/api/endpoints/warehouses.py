@@ -3,8 +3,8 @@ from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.rbac import require_permission
-from app.models import Warehouse
+from app.core.rbac import require_permission, check_permission
+from app.models import Warehouse, User
 
 router = APIRouter()
 
@@ -35,8 +35,7 @@ class WarehouseSchema(WarehouseBase):
 @router.get("/", response_model=List[WarehouseSchema])
 @require_permission("warehouses_view")
 async def list_warehouses(
-    authorization: str = Header(None),
-    current_user = None,
+    current_user: User = Depends(check_permission("warehouses_view")),
     db: Session = Depends(get_db)
 ):
     """List all warehouses"""
@@ -47,8 +46,7 @@ async def list_warehouses(
 @router.get("", response_model=List[WarehouseSchema])
 @require_permission("warehouses_view")
 async def list_warehouses_no_slash(
-    authorization: str = Header(None),
-    current_user = None,
+    current_user: User = Depends(check_permission("warehouses_view")),
     db: Session = Depends(get_db)
 ):
     """List all warehouses (no trailing slash)"""
@@ -58,8 +56,7 @@ async def list_warehouses_no_slash(
 @router.get("/")
 @require_permission("warehouses_view")
 async def list_warehouses_paginated(
-    authorization: str = Header(None),
-    current_user = None,
+    current_user: User = Depends(check_permission("warehouses_view")),
     db: Session = Depends(get_db)
 ):
     """List all warehouses with pagination wrapper"""
@@ -86,8 +83,7 @@ async def list_warehouses_paginated(
 @require_permission("warehouses_view")
 async def get_warehouse(
     warehouse_id: int,
-    authorization: str = Header(None),
-    current_user = None,
+    current_user: User = Depends(check_permission("warehouses_view")),
     db: Session = Depends(get_db)
 ):
     """Get a specific warehouse"""
@@ -101,8 +97,7 @@ async def get_warehouse(
 @require_permission("warehouses_create")
 async def create_warehouse(
     warehouse: WarehouseCreate,
-    authorization: str = Header(None),
-    current_user = None,
+    current_user: User = Depends(check_permission("warehouses_create")),
     db: Session = Depends(get_db)
 ):
     """Create a new warehouse"""
@@ -123,8 +118,7 @@ async def create_warehouse(
 async def update_warehouse(
     warehouse_id: int,
     warehouse: WarehouseUpdate,
-    authorization: str = Header(None),
-    current_user = None,
+    current_user: User = Depends(check_permission("warehouses_update")),
     db: Session = Depends(get_db)
 ):
     """Update a warehouse"""
@@ -150,8 +144,7 @@ async def update_warehouse(
 @require_permission("warehouses_delete")
 async def delete_warehouse(
     warehouse_id: int,
-    authorization: str = Header(None),
-    current_user = None,
+    current_user: User = Depends(check_permission("warehouses_delete")),
     db: Session = Depends(get_db)
 ):
     """Delete a warehouse"""

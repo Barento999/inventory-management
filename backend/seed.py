@@ -19,16 +19,18 @@ from app.seeds.seed_data import CATEGORIES, WAREHOUSES, PRODUCTS, SUPPLIERS, CUS
 
 
 def seed_users(db):
-    """Add seed users"""
-    print("\n👥 Seeding users...")
+    """Add seed users with different roles for RBAC testing"""
+    print("\n👥 Seeding users with different roles...")
     
     users = [
+        # Admin user - full access to everything
         {
             "email": "admin@inventory.com",
             "name": "Admin User",
             "password_hash": hash_password("Admin@123"),
             "role": "admin",
         },
+        # Manager users - manage products, sales, users, inventory
         {
             "email": "manager@inventory.com",
             "name": "Manager User",
@@ -36,10 +38,31 @@ def seed_users(db):
             "role": "manager",
         },
         {
+            "email": "manager2@inventory.com",
+            "name": "Manager Two",
+            "password_hash": hash_password("Manager@123"),
+            "role": "manager",
+        },
+        # Staff user - basic creation, mostly view
+        {
+            "email": "staff@inventory.com",
+            "name": "Staff User",
+            "password_hash": hash_password("Staff@123"),
+            "role": "staff",
+        },
+        # Regular user - limited permissions
+        {
             "email": "user@inventory.com",
             "name": "Regular User",
             "password_hash": hash_password("User@123"),
             "role": "user",
+        },
+        # Viewer user - read-only access
+        {
+            "email": "viewer@inventory.com",
+            "name": "Viewer User",
+            "password_hash": hash_password("Viewer@123"),
+            "role": "viewer",
         },
     ]
     
@@ -290,10 +313,21 @@ def seed_database():
             seed_quotes(db)
             
             print("\n✅ Database seeding completed successfully!")
-            print("\n📋 Test Credentials:")
-            print("  Admin:   admin@inventory.com / Admin@123")
-            print("  Manager: manager@inventory.com / Manager@123")
-            print("  User:    user@inventory.com / User@123")
+            print("\n📋 Test Credentials (for RBAC testing):")
+            print("  Admin:     admin@inventory.com / Admin@123 (Full access)")
+            print("  Manager:   manager@inventory.com / Manager@123 (Management features)")
+            print("  Manager 2: manager2@inventory.com / Manager@123 (Management features)")
+            print("  Staff:     staff@inventory.com / Staff@123 (Basic creation)")
+            print("  User:      user@inventory.com / User@123 (Limited permissions)")
+            print("  Viewer:    viewer@inventory.com / Viewer@123 (Read-only)")
+            print("\n🔒 Permission Hierarchy:")
+            print("  Admin    > Manager > Staff > User > Viewer")
+            print("  (Admin has all permissions, Viewer has read-only access)")
+            print("\n✨ Test the system:")
+            print("  1. Start backend: python -m uvicorn app.main:app --reload")
+            print("  2. Login with different users to test permissions")
+            print("  3. Try accessing endpoints that should be denied")
+            print("  4. Check audit logs in browser DevTools")
             
         finally:
             db.close()

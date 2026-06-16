@@ -3,8 +3,8 @@ from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.rbac import require_permission
-from app.models import Return
+from app.core.rbac import require_permission, check_permission
+from app.models import Return, User
 
 router = APIRouter()
 
@@ -41,9 +41,8 @@ async def list_returns(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("returns_view")),
+    db: Session = Depends(get_db)
 ):
     """Get all returns"""
     query = db.query(Return)
@@ -85,9 +84,8 @@ async def list_returns(
 @require_permission("returns_create")
 async def create_return(
     return_item: ReturnCreate,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("returns_create")),
+    db: Session = Depends(get_db)
 ):
     """Create a new return"""
     db_return = Return(**return_item.dict())
@@ -112,9 +110,8 @@ async def create_return(
 async def update_return(
     return_id: int,
     return_item: ReturnUpdate,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("returns_update")),
+    db: Session = Depends(get_db)
 ):
     """Update a return"""
     db_return = db.query(Return).filter(Return.id == return_id).first()
@@ -144,9 +141,8 @@ async def update_return(
 @require_permission("returns_delete")
 async def delete_return(
     return_id: int,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("returns_delete")),
+    db: Session = Depends(get_db)
 ):
     """Delete a return"""
     db_return = db.query(Return).filter(Return.id == return_id).first()

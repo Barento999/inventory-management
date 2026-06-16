@@ -3,8 +3,8 @@ from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.rbac import require_permission
-from app.models import Invoice
+from app.core.rbac import require_permission, check_permission
+from app.models import Invoice, User
 
 router = APIRouter()
 
@@ -42,9 +42,8 @@ async def list_invoices(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("invoices_view")),
+    db: Session = Depends(get_db)
 ):
     """Get all invoices"""
     query = db.query(Invoice)
@@ -86,9 +85,8 @@ async def list_invoices(
 @require_permission("invoices_create")
 async def create_invoice(
     invoice: InvoiceCreate,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("invoices_create")),
+    db: Session = Depends(get_db)
 ):
     """Create a new invoice"""
     db_invoice = Invoice(**invoice.dict())
@@ -113,9 +111,8 @@ async def create_invoice(
 async def update_invoice(
     invoice_id: int,
     invoice: InvoiceUpdate,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("invoices_update")),
+    db: Session = Depends(get_db)
 ):
     """Update an invoice"""
     db_invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
@@ -145,9 +142,8 @@ async def update_invoice(
 @require_permission("invoices_update")
 async def mark_invoice_paid(
     invoice_id: int,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("invoices_update")),
+    db: Session = Depends(get_db)
 ):
     """Mark invoice as paid"""
     db_invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
@@ -176,9 +172,8 @@ async def mark_invoice_paid(
 @require_permission("invoices_delete")
 async def delete_invoice(
     invoice_id: int,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("invoices_delete")),
+    db: Session = Depends(get_db)
 ):
     """Delete an invoice"""
     db_invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()

@@ -3,8 +3,8 @@ from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.rbac import require_permission
-from app.models import Product
+from app.core.rbac import require_permission, check_permission
+from app.models import Product, User
 
 router = APIRouter()
 
@@ -57,9 +57,8 @@ async def list_products(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("products_view")),
+    db: Session = Depends(get_db)
 ):
     """List all products with pagination wrapper"""
     query = db.query(Product)
@@ -114,9 +113,9 @@ async def list_products(
 @require_permission("products_view")
 async def get_product(
     product_id: int,
-    authorization: str = Header(None),
+    current_user: User = Depends(check_permission("products_view")),
     db: Session = Depends(get_db)
-, current_user = None):
+):
     """Get a specific product"""
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
@@ -128,9 +127,9 @@ async def get_product(
 @require_permission("products_create")
 async def create_product(
     product: ProductCreate,
-    authorization: str = Header(None),
+    current_user: User = Depends(check_permission("products_create")),
     db: Session = Depends(get_db)
-, current_user = None):
+):
     """Create a new product"""
     db_product = Product(**product.dict())
     db.add(db_product)
@@ -143,10 +142,10 @@ async def create_product(
 @require_permission("products_update")
 async def update_product(
     product_id: int, 
-    product: ProductUpdate, 
-    authorization: str = Header(None),
+    product: ProductUpdate,
+    current_user: User = Depends(check_permission("products_update")),
     db: Session = Depends(get_db)
-, current_user = None):
+):
     """Update a product"""
     db_product = db.query(Product).filter(Product.id == product_id).first()
     if not db_product:
@@ -165,9 +164,9 @@ async def update_product(
 @require_permission("products_delete")
 async def delete_product(
     product_id: int,
-    authorization: str = Header(None),
+    current_user: User = Depends(check_permission("products_delete")),
     db: Session = Depends(get_db)
-, current_user = None):
+):
     """Delete a product"""
     db_product = db.query(Product).filter(Product.id == product_id).first()
     if not db_product:

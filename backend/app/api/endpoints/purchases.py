@@ -3,8 +3,8 @@ from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.rbac import require_permission
-from app.models import Purchase
+from app.core.rbac import require_permission, check_permission
+from app.models import Purchase, User
 
 router = APIRouter()
 
@@ -54,9 +54,8 @@ async def list_purchases(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("purchases_view")),
+    db: Session = Depends(get_db)
 ):
     """List all purchases with pagination wrapper"""
     query = db.query(Purchase)
@@ -96,9 +95,8 @@ async def list_purchases(
 @require_permission("purchases_view")
 async def get_purchase(
     purchase_id: int,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("purchases_view")),
+    db: Session = Depends(get_db)
 ):
     """Get a specific purchase"""
     purchase = db.query(Purchase).filter(Purchase.id == purchase_id).first()
@@ -111,9 +109,8 @@ async def get_purchase(
 @require_permission("purchases_create")
 async def create_purchase(
     purchase: PurchaseCreate,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("purchases_create")),
+    db: Session = Depends(get_db)
 ):
     """Create a new purchase"""
     db_purchase = Purchase(**purchase.dict())
@@ -128,9 +125,8 @@ async def create_purchase(
 async def update_purchase(
     purchase_id: int,
     purchase: PurchaseUpdate,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("purchases_update")),
+    db: Session = Depends(get_db)
 ):
     """Update a purchase"""
     db_purchase = db.query(Purchase).filter(Purchase.id == purchase_id).first()
@@ -150,9 +146,8 @@ async def update_purchase(
 @require_permission("purchases_delete")
 async def delete_purchase(
     purchase_id: int,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("purchases_delete")),
+    db: Session = Depends(get_db)
 ):
     """Delete a purchase"""
     db_purchase = db.query(Purchase).filter(Purchase.id == purchase_id).first()

@@ -3,8 +3,8 @@ from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.rbac import require_permission
-from app.models import Batch
+from app.core.rbac import require_permission, check_permission
+from app.models import Batch, User
 
 router = APIRouter()
 
@@ -40,9 +40,8 @@ async def list_batches(
     product_id: Optional[int] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("batches_view")),
+    db: Session = Depends(get_db)
 ):
     """Get all batches"""
     query = db.query(Batch)
@@ -83,9 +82,8 @@ async def list_batches(
 @require_permission("batches_create")
 async def create_batch(
     batch: BatchCreate,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("batches_create")),
+    db: Session = Depends(get_db)
 ):
     """Create a new batch"""
     db_batch = Batch(**batch.dict())
@@ -109,9 +107,8 @@ async def create_batch(
 async def update_batch(
     batch_id: int,
     batch: BatchUpdate,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("batches_update")),
+    db: Session = Depends(get_db)
 ):
     """Update a batch"""
     db_batch = db.query(Batch).filter(Batch.id == batch_id).first()
@@ -140,9 +137,8 @@ async def update_batch(
 @require_permission("batches_delete")
 async def delete_batch(
     batch_id: int,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("batches_delete")),
+    db: Session = Depends(get_db)
 ):
     """Delete a batch"""
     db_batch = db.query(Batch).filter(Batch.id == batch_id).first()

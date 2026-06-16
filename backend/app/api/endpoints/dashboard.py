@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, Header
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.rbac import require_permission
-from app.models import Product, Sale, Purchase, Customer, Supplier
+from app.core.rbac import require_permission, check_permission
+from app.models import Product, Sale, Purchase, Customer, Supplier, User
 
 router = APIRouter()
 
@@ -10,9 +10,8 @@ router = APIRouter()
 @router.get("/summary")
 @require_permission("reports_view")
 async def get_dashboard_summary(
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("reports_view")),
+    db: Session = Depends(get_db)
 ):
     """Get dashboard summary statistics"""
     
@@ -69,9 +68,8 @@ async def get_dashboard_summary(
 @router.get("/top-products")
 @require_permission("reports_view")
 async def get_top_products(
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("reports_view")),
+    db: Session = Depends(get_db)
 ):
     """Get top selling products"""
     # For now, return top products by stock value

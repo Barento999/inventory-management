@@ -3,8 +3,8 @@ from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.rbac import require_permission
-from app.models import Quote
+from app.core.rbac import require_permission, check_permission
+from app.models import Quote, User
 
 router = APIRouter()
 
@@ -42,9 +42,8 @@ async def list_quotes(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("sales_view")),
+    db: Session = Depends(get_db)
 ):
     """List all quotes with pagination wrapper"""
     query = db.query(Quote)
@@ -84,9 +83,8 @@ async def list_quotes(
 @require_permission("sales_view")
 async def get_quote(
     quote_id: int,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("sales_view")),
+    db: Session = Depends(get_db)
 ):
     """Get a specific quote"""
     quote = db.query(Quote).filter(Quote.id == quote_id).first()
@@ -99,9 +97,8 @@ async def get_quote(
 @require_permission("sales_create")
 async def create_quote(
     quote: QuoteCreate,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("sales_create")),
+    db: Session = Depends(get_db)
 ):
     """Create a new quote"""
     db_quote = Quote(**quote.dict())
@@ -116,9 +113,8 @@ async def create_quote(
 async def update_quote(
     quote_id: int,
     quote: QuoteUpdate,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("sales_update")),
+    db: Session = Depends(get_db)
 ):
     """Update a quote"""
     db_quote = db.query(Quote).filter(Quote.id == quote_id).first()
@@ -139,9 +135,8 @@ async def update_quote(
 async def update_quote_status(
     quote_id: int,
     status: str,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("sales_update")),
+    db: Session = Depends(get_db)
 ):
     """Update quote status"""
     db_quote = db.query(Quote).filter(Quote.id == quote_id).first()
@@ -166,9 +161,8 @@ async def update_quote_status(
 @require_permission("sales_delete")
 async def delete_quote(
     quote_id: int,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("sales_delete")),
+    db: Session = Depends(get_db)
 ):
     """Delete a quote"""
     db_quote = db.query(Quote).filter(Quote.id == quote_id).first()

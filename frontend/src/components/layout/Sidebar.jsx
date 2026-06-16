@@ -27,97 +27,100 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { usePermissions } from '../../hooks/usePermissions';
+import { PERMISSION_GROUPS } from '../../utils/permissions';
 
 const navSections = [
   {
     id: 'dashboard',
     items: [
-      { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true, roles: ['admin', 'manager', 'staff', 'viewer'] },
+      { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true, permission: 'dashboard_view' },
     ],
   },
   {
     id: 'inventory',
     label: 'Inventory',
     icon: Package,
-    roles: ['admin', 'manager', 'staff', 'viewer'],
+    permission: PERMISSION_GROUPS.PRODUCTS.VIEW,
     items: [
-      { to: '/products', label: 'Products', icon: Package, roles: ['admin', 'manager', 'staff', 'viewer'] },
-      { to: '/categories', label: 'Categories', icon: Folder, roles: ['admin', 'manager', 'staff', 'viewer'] },
-      { to: '/warehouses', label: 'Warehouses', icon: Warehouse, roles: ['admin', 'manager', 'staff', 'viewer'] },
-      { to: '/serial-numbers', label: 'Serial Numbers', icon: ScanLine, roles: ['admin', 'manager', 'staff', 'viewer'] },
-      { to: '/batches', label: 'Batches', icon: Layers, roles: ['admin', 'manager', 'staff', 'viewer'] },
-      { to: '/inventory', label: 'Inventory', icon: Boxes, roles: ['admin', 'manager', 'staff', 'viewer'] },
+      { to: '/products', label: 'Products', icon: Package, permission: PERMISSION_GROUPS.PRODUCTS.VIEW },
+      { to: '/categories', label: 'Categories', icon: Folder, permission: PERMISSION_GROUPS.CATEGORIES.VIEW },
+      { to: '/warehouses', label: 'Warehouses', icon: Warehouse, permission: PERMISSION_GROUPS.WAREHOUSES.VIEW },
+      { to: '/serial-numbers', label: 'Serial Numbers', icon: ScanLine, permission: PERMISSION_GROUPS.SERIAL_NUMBERS.VIEW },
+      { to: '/batches', label: 'Batches', icon: Layers, permission: PERMISSION_GROUPS.BATCHES.VIEW },
+      { to: '/inventory', label: 'Inventory', icon: Boxes, permission: PERMISSION_GROUPS.INVENTORY.VIEW },
     ],
   },
   {
     id: 'suppliers',
     label: 'Suppliers',
     icon: Truck,
-    roles: ['admin', 'manager', 'staff', 'viewer'],
+    permission: PERMISSION_GROUPS.SUPPLIERS.VIEW,
     items: [
-      { to: '/suppliers', label: 'Suppliers', icon: Truck, roles: ['admin', 'manager', 'staff', 'viewer'] },
-      { to: '/vendors', label: 'Vendor Portal', icon: Building2, roles: ['admin', 'manager'] },
+      { to: '/suppliers', label: 'Suppliers', icon: Truck, permission: PERMISSION_GROUPS.SUPPLIERS.VIEW },
+      { to: '/vendors', label: 'Vendor Portal', icon: Building2, permission: PERMISSION_GROUPS.SUPPLIERS.VIEW },
     ],
   },
   {
     id: 'orders',
     label: 'Orders',
     icon: ShoppingCart,
-    roles: ['admin', 'manager', 'staff', 'viewer'],
+    permission: PERMISSION_GROUPS.PURCHASES.VIEW,
     items: [
-      { to: '/purchases', label: 'Purchases', icon: ShoppingCart, roles: ['admin', 'manager', 'staff', 'viewer'] },
-      { to: '/sales', label: 'Sales', icon: Receipt, roles: ['admin', 'manager', 'staff', 'viewer'] },
-      { to: '/kanban', label: 'Order Board', icon: Kanban, roles: ['admin', 'manager', 'staff'] },
-      { to: '/calendar', label: 'Calendar', icon: CalendarIcon, roles: ['admin', 'manager', 'staff'] },
+      { to: '/purchases', label: 'Purchases', icon: ShoppingCart, permission: PERMISSION_GROUPS.PURCHASES.VIEW },
+      { to: '/sales', label: 'Sales', icon: Receipt, permission: PERMISSION_GROUPS.SALES.VIEW },
+      { to: '/kanban', label: 'Order Board', icon: Kanban, permission: PERMISSION_GROUPS.PURCHASES.VIEW },
+      { to: '/calendar', label: 'Calendar', icon: CalendarIcon, permission: PERMISSION_GROUPS.PURCHASES.VIEW },
     ],
   },
   {
     id: 'documents',
     label: 'Documents',
     icon: FileText,
-    roles: ['admin', 'manager', 'staff', 'viewer'],
+    permission: PERMISSION_GROUPS.INVOICES.VIEW,
     items: [
-      { to: '/quotes', label: 'Quotes', icon: FileText, roles: ['admin', 'manager', 'staff'] },
-      { to: '/returns', label: 'Returns', icon: RotateCcw, roles: ['admin', 'manager', 'staff', 'viewer'] },
-      { to: '/invoices', label: 'Invoices', icon: DollarSign, roles: ['admin', 'manager', 'staff', 'viewer'] },
-      { to: '/shipping', label: 'Shipping', icon: PackageCheck, roles: ['admin', 'manager', 'staff'] },
+      { to: '/quotes', label: 'Quotes', icon: FileText, permission: 'quotes_view' },
+      { to: '/returns', label: 'Returns', icon: RotateCcw, permission: PERMISSION_GROUPS.RETURNS.VIEW },
+      { to: '/invoices', label: 'Invoices', icon: DollarSign, permission: PERMISSION_GROUPS.INVOICES.VIEW },
+      { to: '/shipping', label: 'Shipping', icon: PackageCheck, permission: 'shipping_view' },
     ],
   },
   {
     id: 'customers',
-    roles: ['admin', 'manager', 'staff', 'viewer'],
+    permission: PERMISSION_GROUPS.CUSTOMERS.VIEW,
     items: [
-      { to: '/customers', label: 'Customers', icon: Users, roles: ['admin', 'manager', 'staff', 'viewer'] },
+      { to: '/customers', label: 'Customers', icon: Users, permission: PERMISSION_GROUPS.CUSTOMERS.VIEW },
     ],
   },
   {
     id: 'admin',
     label: 'Administration',
     icon: Shield,
-    roles: ['admin', 'manager'],
+    permission: PERMISSION_GROUPS.USERS.VIEW,
     items: [
-      { to: '/users', label: 'Users', icon: Shield, roles: ['admin', 'manager'] },
-      { to: '/audit-logs', label: 'Audit Logs', icon: History, roles: ['admin', 'manager'] },
+      { to: '/users', label: 'Users', icon: Shield, permission: PERMISSION_GROUPS.USERS.VIEW },
+      { to: '/audit-logs', label: 'Audit Logs', icon: History, permission: PERMISSION_GROUPS.AUDIT_LOGS.VIEW },
     ],
   },
   {
     id: 'reports',
-    roles: ['admin', 'manager', 'staff', 'viewer'],
+    permission: PERMISSION_GROUPS.REPORTS.VIEW,
     items: [
-      { to: '/reports', label: 'Reports', icon: BarChart2, roles: ['admin', 'manager', 'staff', 'viewer'] },
+      { to: '/reports', label: 'Reports', icon: BarChart2, permission: PERMISSION_GROUPS.REPORTS.VIEW },
     ],
   },
   {
     id: 'settings',
-    roles: ['admin', 'manager'],
+    permission: PERMISSION_GROUPS.SETTINGS.VIEW,
     items: [
-      { to: '/settings', label: 'Settings', icon: Settings, roles: ['admin', 'manager'] },
+      { to: '/settings', label: 'Settings', icon: Settings, permission: PERMISSION_GROUPS.SETTINGS.VIEW },
     ],
   },
 ];
 
 export default function Sidebar({ mobileOpen, onClose }) {
   const { user } = useAuth();
+  const { has } = usePermissions();
   const [openSections, setOpenSections] = useState(() => {
     const saved = localStorage.getItem('sidebarSections');
     return saved ? JSON.parse(saved) : {};
@@ -131,13 +134,12 @@ export default function Sidebar({ mobileOpen, onClose }) {
     });
   };
 
-  // Filter navigation sections based on user role
-  const userRole = user?.role || 'viewer';
+  // Filter navigation sections based on user permissions
   const filteredNavSections = navSections
-    .filter(section => !section.roles || section.roles.includes(userRole))
+    .filter(section => !section.permission || has(section.permission))
     .map(section => ({
       ...section,
-      items: section.items.filter(item => !item.roles || item.roles.includes(userRole))
+      items: section.items.filter(item => !item.permission || has(item.permission))
     }))
     .filter(section => section.items.length > 0); // Remove sections with no visible items
 
@@ -154,6 +156,11 @@ export default function Sidebar({ mobileOpen, onClose }) {
         <div className="p-4 border-b dark:border-gray-700">
           <h1 className="text-lg font-bold text-primary">InventoryPro</h1>
           <p className="text-xs text-gray-500">Inventory SaaS</p>
+          {user && (
+            <p className="text-xs text-gray-500 mt-2">
+              Role: <span className="font-semibold capitalize">{user.role}</span>
+            </p>
+          )}
         </div>
         <nav className="mt-4 pb-4 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-5rem)]">
           {filteredNavSections.map((section) => {

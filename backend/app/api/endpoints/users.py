@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import hash_password, verify_token
-from app.core.rbac import require_permission, require_role
+from app.core.rbac import require_permission, require_role, check_permission, check_role
 from app.models import User
 
 router = APIRouter()
@@ -36,8 +36,7 @@ class UserSchema(UserBase):
 @router.get("/", response_model=List[UserSchema])
 @require_permission("users_view")
 async def list_users(
-    authorization: str = Header(None),
-    current_user = None,
+    current_user: User = Depends(check_permission("users_view")),
     db: Session = Depends(get_db)
 ):
     """List all users (excluding password)"""
@@ -48,8 +47,7 @@ async def list_users(
 @router.get("", response_model=List[UserSchema])
 @require_permission("users_view")
 async def list_users_no_slash(
-    authorization: str = Header(None),
-    current_user = None,
+    current_user: User = Depends(check_permission("users_view")),
     db: Session = Depends(get_db)
 ):
     """List all users (no trailing slash)"""
@@ -59,8 +57,7 @@ async def list_users_no_slash(
 @router.get("/")
 @require_permission("users_view")
 async def list_users_paginated(
-    authorization: str = Header(None),
-    current_user = None,
+    current_user: User = Depends(check_permission("users_view")),
     db: Session = Depends(get_db)
 ):
     """List all users with pagination wrapper"""
@@ -87,8 +84,7 @@ async def list_users_paginated(
 @require_permission("users_view")
 async def get_user(
     user_id: int,
-    authorization: str = Header(None),
-    current_user = None,
+    current_user: User = Depends(check_permission("users_view")),
     db: Session = Depends(get_db)
 ):
     """Get a specific user"""
@@ -102,8 +98,7 @@ async def get_user(
 @require_permission("users_create")
 async def create_user(
     user: UserCreate,
-    authorization: str = Header(None),
-    current_user = None,
+    current_user: User = Depends(check_permission("users_create")),
     db: Session = Depends(get_db)
 ):
     """Create a new user"""
@@ -131,8 +126,7 @@ async def create_user(
 async def update_user(
     user_id: int,
     user: UserUpdate,
-    authorization: str = Header(None),
-    current_user = None,
+    current_user: User = Depends(check_permission("users_update")),
     db: Session = Depends(get_db)
 ):
     """Update a user"""
@@ -159,8 +153,7 @@ async def update_user(
 @require_permission("users_delete")
 async def delete_user(
     user_id: int,
-    authorization: str = Header(None),
-    current_user = None,
+    current_user: User = Depends(check_permission("users_delete")),
     db: Session = Depends(get_db)
 ):
     """Delete a user"""

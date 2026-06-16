@@ -3,8 +3,8 @@ from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.rbac import require_permission
-from app.models import Customer
+from app.core.rbac import require_permission, check_permission
+from app.models import Customer, User
 
 router = APIRouter()
 
@@ -40,9 +40,8 @@ async def list_customers(
     search: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("customers_view")),
+    db: Session = Depends(get_db)
 ):
     """List all customers with pagination wrapper"""
     query = db.query(Customer)
@@ -78,9 +77,8 @@ async def list_customers(
 @require_permission("customers_view")
 async def get_customer(
     customer_id: int,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("customers_view")),
+    db: Session = Depends(get_db)
 ):
     """Get a specific customer"""
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
@@ -93,9 +91,8 @@ async def get_customer(
 @require_permission("customers_create")
 async def create_customer(
     customer: CustomerCreate,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("customers_create")),
+    db: Session = Depends(get_db)
 ):
     """Create a new customer"""
     db_customer = Customer(**customer.dict())
@@ -110,9 +107,8 @@ async def create_customer(
 async def update_customer(
     customer_id: int,
     customer: CustomerUpdate,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("customers_update")),
+    db: Session = Depends(get_db)
 ):
     """Update a customer"""
     db_customer = db.query(Customer).filter(Customer.id == customer_id).first()
@@ -132,9 +128,8 @@ async def update_customer(
 @require_permission("customers_delete")
 async def delete_customer(
     customer_id: int,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("customers_delete")),
+    db: Session = Depends(get_db)
 ):
     """Delete a customer"""
     db_customer = db.query(Customer).filter(Customer.id == customer_id).first()

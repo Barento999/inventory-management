@@ -3,8 +3,8 @@ from typing import Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.rbac import require_permission, require_role
-from app.models import Settings
+from app.core.rbac import require_permission, require_role, check_permission, check_role
+from app.models import Settings, User
 
 router = APIRouter()
 
@@ -30,10 +30,10 @@ class SettingsSchema(SettingsBase):
         from_attributes = True
 
 
+@router.get("")
 @require_permission("settings_view")
 async def get_settings(
-    authorization: str = Header(None),
-    current_user = None,
+    current_user: User = Depends(check_permission("settings_view")),
     db: Session = Depends(get_db)
 ):
     """Get current settings"""
@@ -61,8 +61,7 @@ async def get_settings(
 @require_permission("settings_update")
 async def update_settings(
     settings_update: SettingsUpdate,
-    authorization: str = Header(None),
-    current_user = None,
+    current_user: User = Depends(check_permission("settings_update")),
     db: Session = Depends(get_db)
 ):
     """Update settings"""
@@ -96,7 +95,7 @@ async def update_settings(
 @require_permission("settings_reset")
 @require_role("admin")
 async def reset_data(
-    authorization: str = Header(None),
+    current_user: User = Depends(check_role("admin")),
     db: Session = Depends(get_db)
 ):
     """Reset all data (dangerous operation)"""

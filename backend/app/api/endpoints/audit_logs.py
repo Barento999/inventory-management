@@ -3,8 +3,8 @@ from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.rbac import require_permission
-from app.models import AuditLog
+from app.core.rbac import require_permission, check_permission
+from app.models import AuditLog, User
 
 router = APIRouter()
 
@@ -34,9 +34,8 @@ class AuditLogSchema(AuditLogBase):
 async def list_audit_logs(
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("audit_logs_view")),
+    db: Session = Depends(get_db)
 ):
     """Get all audit logs"""
     query = db.query(AuditLog)
@@ -73,9 +72,8 @@ async def list_audit_logs(
 @require_permission("audit_logs_view")
 async def create_audit_log(
     log: AuditLogCreate,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("audit_logs_view")),
+    db: Session = Depends(get_db)
 ):
     """Create a new audit log"""
     db_log = AuditLog(**log.dict())

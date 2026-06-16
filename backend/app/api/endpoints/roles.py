@@ -3,8 +3,8 @@ from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.rbac import require_permission, require_role
-from app.models import Role
+from app.core.rbac import require_permission, require_role, check_permission, check_role
+from app.models import Role, User
 
 router = APIRouter()
 
@@ -32,10 +32,11 @@ class RoleSchema(RoleBase):
         from_attributes = True
 
 
+@router.get("/")
 @require_permission("roles_view")
 @require_role("admin")
 async def list_roles(
-    authorization: str = Header(None),
+    current_user: User = Depends(check_role("admin")),
     db: Session = Depends(get_db)
 ):
     """Get all roles"""
@@ -60,7 +61,7 @@ async def list_roles(
 @require_role("admin")
 async def get_role(
     role_id: int,
-    authorization: str = Header(None),
+    current_user: User = Depends(check_role("admin")),
     db: Session = Depends(get_db)
 ):
     """Get a specific role"""
@@ -81,7 +82,7 @@ async def get_role(
 @require_role("admin")
 async def create_role(
     role: RoleCreate,
-    authorization: str = Header(None),
+    current_user: User = Depends(check_role("admin")),
     db: Session = Depends(get_db)
 ):
     """Create a new role"""
@@ -104,7 +105,7 @@ async def create_role(
 async def update_role(
     role_id: int,
     role: RoleUpdate,
-    authorization: str = Header(None),
+    current_user: User = Depends(check_role("admin")),
     db: Session = Depends(get_db)
 ):
     """Update a role"""
@@ -132,7 +133,7 @@ async def update_role(
 @require_role("admin")
 async def delete_role(
     role_id: int,
-    authorization: str = Header(None),
+    current_user: User = Depends(check_role("admin")),
     db: Session = Depends(get_db)
 ):
     """Delete a role"""

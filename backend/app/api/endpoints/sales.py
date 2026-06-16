@@ -3,8 +3,8 @@ from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.rbac import require_permission
-from app.models import Sale
+from app.core.rbac import require_permission, check_permission
+from app.models import Sale, User
 
 router = APIRouter()
 
@@ -40,9 +40,8 @@ async def list_sales(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("sales_view")),
+    db: Session = Depends(get_db)
 ):
     """List all sales with pagination wrapper"""
     query = db.query(Sale)
@@ -81,9 +80,8 @@ async def list_sales(
 @require_permission("sales_view")
 async def get_sale(
     sale_id: int,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("sales_view")),
+    db: Session = Depends(get_db)
 ):
     """Get a specific sale"""
     sale = db.query(Sale).filter(Sale.id == sale_id).first()
@@ -96,9 +94,8 @@ async def get_sale(
 @require_permission("sales_create")
 async def create_sale(
     sale: SaleCreate,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("sales_create")),
+    db: Session = Depends(get_db)
 ):
     """Create a new sale"""
     db_sale = Sale(**sale.dict())
@@ -113,9 +110,8 @@ async def create_sale(
 async def update_sale(
     sale_id: int,
     sale: SaleUpdate,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("sales_update")),
+    db: Session = Depends(get_db)
 ):
     """Update a sale"""
     db_sale = db.query(Sale).filter(Sale.id == sale_id).first()
@@ -135,9 +131,8 @@ async def update_sale(
 @require_permission("sales_delete")
 async def delete_sale(
     sale_id: int,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("sales_delete")),
+    db: Session = Depends(get_db)
 ):
     """Delete a sale"""
     db_sale = db.query(Sale).filter(Sale.id == sale_id).first()

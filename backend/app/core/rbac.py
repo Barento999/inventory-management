@@ -1,10 +1,126 @@
 from functools import wraps
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Callable, TypeVar, Any
 from app.core.database import get_db
 from app.core.security import verify_token
 from app.models import User, Role
+
+F = TypeVar('F', bound=Callable[..., Any])
+
+
+from fastapi import Depends, HTTPException, status, Header
+from sqlalchemy.orm import Session
+
+
+async def get_current_user(
+    authorization: str = Header(None), 
+    db: Session = Depends(get_db)
+) -> User:
+    """Dependency to get current authenticated user"""
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header missing"
+        )
+    
+    token = authorization.replace("Bearer ", "") if authorization.startswith("Bearer ") else authorization
+    payload = verify_token(token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
+    
+    user_id = payload.get("user_id")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    return user
+
+
+def check_permission(required_permission: str):
+    """Dependency factory to check if user has required permission"""
+    async def permission_checker(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
+        user_permissions = get_user_permissions(current_user.role, db)
+        if not has_permission(user_permissions, required_permission):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permission '{required_permission}' required"
+            )
+        return current_user
+    return permission_checker
+
+
+def check_any_permission(*required_permissions: str):
+    """Dependency factory to check if user has any of required permissions"""
+    async def permission_checker(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
+        user_permissions = get_user_permissions(current_user.role, db)
+        if not has_any_permission(user_permissions, list(required_permissions)):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"One of permissions {required_permissions} required"
+            )
+        return current_user
+    return permission_checker
+
+
+def check_role(*required_roles: str):
+    """Dependency factory to check if user has required role"""
+    async def role_checker(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in required_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"One of roles {required_roles} required"
+            )
+        return current_user
+    return role_checker
+
+
+def require_permission(permission: str):
+    """Decorator to require a specific permission for an endpoint - DEPRECATED, use Depends(check_permission(permission)) instead"""
+    def decorator(func: F) -> F:
+        @wraps(func)
+        async def wrapper(*args, **kwargs) -> Any:
+            # This decorator is now just a pass-through for backwards compatibility
+            # The actual permission check happens in the endpoint via Depends()
+            return await func(*args, **kwargs)
+        return wrapper  # type: ignore
+    return decorator
+
+
+def require_any_permission(*permissions: str):
+    """Decorator to require any of the specified permissions for an endpoint - DEPRECATED, use Depends(check_any_permission(permissions)) instead"""
+    def decorator(func: F) -> F:
+        @wraps(func)
+        async def wrapper(*args, **kwargs) -> Any:
+            # This decorator is now just a pass-through for backwards compatibility
+            # The actual permission check happens in the endpoint via Depends()
+            return await func(*args, **kwargs)
+        return wrapper  # type: ignore
+    return decorator
+
+
+def require_role(*roles: str):
+    """Decorator to require specific role(s) for an endpoint - DEPRECATED, use Depends(check_role(roles)) instead"""
+    def decorator(func: F) -> F:
+        @wraps(func)
+        async def wrapper(*args, **kwargs) -> Any:
+            # This decorator is now just a pass-through for backwards compatibility
+            # The actual permission check happens in the endpoint via Depends()
+            return await func(*args, **kwargs)
+        return wrapper  # type: ignore
+    return decorator
 
 
 # Permission constants
@@ -188,154 +304,3 @@ def has_any_permission(user_permissions: List[str], required_permissions: List[s
     return any(perm in user_permissions for perm in required_permissions)
 
 
-def require_permission(permission: str):
-    """Decorator to require a specific permission for an endpoint"""
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(*args, authorization: str = None, db: Session = Depends(get_db), **kwargs):
-            # Get user from token
-            if not authorization:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Authorization header missing"
-                )
-            
-            token = authorization.replace("Bearer ", "") if authorization.startswith("Bearer ") else authorization
-            payload = verify_token(token)
-            if not payload:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token"
-                )
-            
-            user_id = payload.get("user_id")
-            if not user_id:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token"
-                )
-            
-            user = db.query(User).filter(User.id == user_id).first()
-            if not user:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User not found"
-                )
-            
-            # Get user permissions
-            user_permissions = get_user_permissions(user.role, db)
-            
-            # Check if user has required permission
-            if not has_permission(user_permissions, permission):
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Permission '{permission}' required"
-                )
-            
-            # Add user to kwargs for use in the endpoint
-            kwargs['current_user'] = user
-            return await func(*args, db=db, **kwargs)
-        
-        return wrapper
-    return decorator
-
-
-def require_any_permission(*permissions: str):
-    """Decorator to require any of the specified permissions for an endpoint"""
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(*args, authorization: str = None, db: Session = Depends(get_db), **kwargs):
-            # Get user from token
-            if not authorization:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Authorization header missing"
-                )
-            
-            token = authorization.replace("Bearer ", "") if authorization.startswith("Bearer ") else authorization
-            payload = verify_token(token)
-            if not payload:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token"
-                )
-            
-            user_id = payload.get("user_id")
-            if not user_id:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token"
-                )
-            
-            user = db.query(User).filter(User.id == user_id).first()
-            if not user:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User not found"
-                )
-            
-            # Get user permissions
-            user_permissions = get_user_permissions(user.role, db)
-            
-            # Check if user has any of the required permissions
-            if not has_any_permission(user_permissions, list(permissions)):
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"One of permissions {permissions} required"
-                )
-            
-            # Add user to kwargs for use in the endpoint
-            kwargs['current_user'] = user
-            return await func(*args, db=db, **kwargs)
-        
-        return wrapper
-    return decorator
-
-
-def require_role(*roles: str):
-    """Decorator to require specific role(s) for an endpoint"""
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(*args, authorization: str = None, db: Session = Depends(get_db), **kwargs):
-            # Get user from token
-            if not authorization:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Authorization header missing"
-                )
-            
-            token = authorization.replace("Bearer ", "") if authorization.startswith("Bearer ") else authorization
-            payload = verify_token(token)
-            if not payload:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token"
-                )
-            
-            user_id = payload.get("user_id")
-            if not user_id:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token"
-                )
-            
-            user = db.query(User).filter(User.id == user_id).first()
-            if not user:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User not found"
-                )
-            
-            # Check if user has required role
-            if user.role not in roles:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"One of roles {roles} required"
-                )
-            
-            # Add user to kwargs for use in the endpoint
-            kwargs['current_user'] = user
-            return await func(*args, db=db, **kwargs)
-        
-        return wrapper
-    return decorator

@@ -3,8 +3,8 @@ from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.rbac import require_permission
-from app.models import Supplier
+from app.core.rbac import require_permission, check_permission
+from app.models import Supplier, User
 
 router = APIRouter()
 
@@ -42,9 +42,8 @@ async def list_suppliers(
     search: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("suppliers_view")),
+    db: Session = Depends(get_db)
 ):
     """List all suppliers with pagination wrapper"""
     query = db.query(Supplier)
@@ -87,9 +86,8 @@ async def list_suppliers(
 @require_permission("suppliers_view")
 async def get_supplier(
     supplier_id: int,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("suppliers_view")),
+    db: Session = Depends(get_db)
 ):
     """Get a specific supplier"""
     supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
@@ -102,9 +100,8 @@ async def get_supplier(
 @require_permission("suppliers_create")
 async def create_supplier(
     supplier: SupplierCreate,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("suppliers_create")),
+    db: Session = Depends(get_db)
 ):
     """Create a new supplier"""
     db_supplier = Supplier(**supplier.dict())
@@ -119,9 +116,8 @@ async def create_supplier(
 async def update_supplier(
     supplier_id: int,
     supplier: SupplierUpdate,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("suppliers_update")),
+    db: Session = Depends(get_db)
 ):
     """Update a supplier"""
     db_supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
@@ -141,9 +137,8 @@ async def update_supplier(
 @require_permission("suppliers_delete")
 async def delete_supplier(
     supplier_id: int,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db),
-    current_user = None
+    current_user: User = Depends(check_permission("suppliers_delete")),
+    db: Session = Depends(get_db)
 ):
     """Delete a supplier"""
     db_supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
