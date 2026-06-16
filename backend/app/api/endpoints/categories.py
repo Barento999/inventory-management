@@ -36,8 +36,9 @@ async def list_categories(
     search: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """List all categories with pagination wrapper"""
     query = db.query(Category)
@@ -70,8 +71,9 @@ async def list_categories(
 @require_permission("categories_view")
 async def get_category(
     category_id: int,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Get a specific category"""
     category = db.query(Category).filter(Category.id == category_id).first()
@@ -84,8 +86,9 @@ async def get_category(
 @require_permission("categories_create")
 async def create_category(
     category: CategoryCreate,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Create a new category"""
     db_category = Category(**category.dict())
@@ -100,8 +103,9 @@ async def create_category(
 async def update_category(
     category_id: int,
     category: CategoryUpdate,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Update a category"""
     db_category = db.query(Category).filter(Category.id == category_id).first()
@@ -121,8 +125,9 @@ async def update_category(
 @require_permission("categories_delete")
 async def delete_category(
     category_id: int,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Delete a category"""
     db_category = db.query(Category).filter(Category.id == category_id).first()

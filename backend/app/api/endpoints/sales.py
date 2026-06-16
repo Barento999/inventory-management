@@ -40,8 +40,9 @@ async def list_sales(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """List all sales with pagination wrapper"""
     query = db.query(Sale)
@@ -80,8 +81,9 @@ async def list_sales(
 @require_permission("sales_view")
 async def get_sale(
     sale_id: int,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Get a specific sale"""
     sale = db.query(Sale).filter(Sale.id == sale_id).first()
@@ -94,8 +96,9 @@ async def get_sale(
 @require_permission("sales_create")
 async def create_sale(
     sale: SaleCreate,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Create a new sale"""
     db_sale = Sale(**sale.dict())
@@ -110,8 +113,9 @@ async def create_sale(
 async def update_sale(
     sale_id: int,
     sale: SaleUpdate,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Update a sale"""
     db_sale = db.query(Sale).filter(Sale.id == sale_id).first()
@@ -131,8 +135,9 @@ async def update_sale(
 @require_permission("sales_delete")
 async def delete_sale(
     sale_id: int,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Delete a sale"""
     db_sale = db.query(Sale).filter(Sale.id == sale_id).first()

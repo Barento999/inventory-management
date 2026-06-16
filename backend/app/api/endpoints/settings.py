@@ -33,6 +33,7 @@ class SettingsSchema(SettingsBase):
 @require_permission("settings_view")
 async def get_settings(
     authorization: str = Header(None),
+    current_user = None,
     db: Session = Depends(get_db)
 ):
     """Get current settings"""
@@ -61,6 +62,7 @@ async def get_settings(
 async def update_settings(
     settings_update: SettingsUpdate,
     authorization: str = Header(None),
+    current_user = None,
     db: Session = Depends(get_db)
 ):
     """Update settings"""

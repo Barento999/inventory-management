@@ -57,8 +57,9 @@ async def list_products(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """List all products with pagination wrapper"""
     query = db.query(Product)

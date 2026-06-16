@@ -42,8 +42,9 @@ async def list_invoices(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Get all invoices"""
     query = db.query(Invoice)
@@ -85,8 +86,9 @@ async def list_invoices(
 @require_permission("invoices_create")
 async def create_invoice(
     invoice: InvoiceCreate,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Create a new invoice"""
     db_invoice = Invoice(**invoice.dict())
@@ -111,8 +113,9 @@ async def create_invoice(
 async def update_invoice(
     invoice_id: int,
     invoice: InvoiceUpdate,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Update an invoice"""
     db_invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
@@ -142,8 +145,9 @@ async def update_invoice(
 @require_permission("invoices_update")
 async def mark_invoice_paid(
     invoice_id: int,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Mark invoice as paid"""
     db_invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
@@ -172,8 +176,9 @@ async def mark_invoice_paid(
 @require_permission("invoices_delete")
 async def delete_invoice(
     invoice_id: int,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Delete an invoice"""
     db_invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()

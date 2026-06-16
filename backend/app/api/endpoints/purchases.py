@@ -54,8 +54,9 @@ async def list_purchases(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """List all purchases with pagination wrapper"""
     query = db.query(Purchase)
@@ -95,8 +96,9 @@ async def list_purchases(
 @require_permission("purchases_view")
 async def get_purchase(
     purchase_id: int,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Get a specific purchase"""
     purchase = db.query(Purchase).filter(Purchase.id == purchase_id).first()
@@ -109,8 +111,9 @@ async def get_purchase(
 @require_permission("purchases_create")
 async def create_purchase(
     purchase: PurchaseCreate,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Create a new purchase"""
     db_purchase = Purchase(**purchase.dict())
@@ -125,8 +128,9 @@ async def create_purchase(
 async def update_purchase(
     purchase_id: int,
     purchase: PurchaseUpdate,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Update a purchase"""
     db_purchase = db.query(Purchase).filter(Purchase.id == purchase_id).first()
@@ -146,8 +150,9 @@ async def update_purchase(
 @require_permission("purchases_delete")
 async def delete_purchase(
     purchase_id: int,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Delete a purchase"""
     db_purchase = db.query(Purchase).filter(Purchase.id == purchase_id).first()

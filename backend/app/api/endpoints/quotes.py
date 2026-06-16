@@ -42,8 +42,9 @@ async def list_quotes(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """List all quotes with pagination wrapper"""
     query = db.query(Quote)
@@ -83,8 +84,9 @@ async def list_quotes(
 @require_permission("sales_view")
 async def get_quote(
     quote_id: int,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Get a specific quote"""
     quote = db.query(Quote).filter(Quote.id == quote_id).first()
@@ -97,8 +99,9 @@ async def get_quote(
 @require_permission("sales_create")
 async def create_quote(
     quote: QuoteCreate,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Create a new quote"""
     db_quote = Quote(**quote.dict())
@@ -113,8 +116,9 @@ async def create_quote(
 async def update_quote(
     quote_id: int,
     quote: QuoteUpdate,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Update a quote"""
     db_quote = db.query(Quote).filter(Quote.id == quote_id).first()
@@ -135,8 +139,9 @@ async def update_quote(
 async def update_quote_status(
     quote_id: int,
     status: str,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Update quote status"""
     db_quote = db.query(Quote).filter(Quote.id == quote_id).first()
@@ -161,8 +166,9 @@ async def update_quote_status(
 @require_permission("sales_delete")
 async def delete_quote(
     quote_id: int,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Delete a quote"""
     db_quote = db.query(Quote).filter(Quote.id == quote_id).first()

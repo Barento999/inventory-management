@@ -40,8 +40,9 @@ async def list_customers(
     search: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """List all customers with pagination wrapper"""
     query = db.query(Customer)
@@ -77,8 +78,9 @@ async def list_customers(
 @require_permission("customers_view")
 async def get_customer(
     customer_id: int,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Get a specific customer"""
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
@@ -91,8 +93,9 @@ async def get_customer(
 @require_permission("customers_create")
 async def create_customer(
     customer: CustomerCreate,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Create a new customer"""
     db_customer = Customer(**customer.dict())
@@ -107,8 +110,9 @@ async def create_customer(
 async def update_customer(
     customer_id: int,
     customer: CustomerUpdate,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Update a customer"""
     db_customer = db.query(Customer).filter(Customer.id == customer_id).first()
@@ -128,8 +132,9 @@ async def update_customer(
 @require_permission("customers_delete")
 async def delete_customer(
     customer_id: int,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Delete a customer"""
     db_customer = db.query(Customer).filter(Customer.id == customer_id).first()

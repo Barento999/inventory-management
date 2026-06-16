@@ -41,8 +41,9 @@ async def list_serial_numbers(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Get all serial numbers"""
     query = db.query(SerialNumber)
@@ -86,8 +87,9 @@ async def list_serial_numbers(
 @require_permission("serial_numbers_create")
 async def create_serial_number(
     serial: SerialNumberCreate,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Create a new serial number"""
     db_serial = SerialNumber(**serial.dict())
@@ -111,8 +113,9 @@ async def create_serial_number(
 async def update_serial_number(
     serial_id: int,
     serial: SerialNumberUpdate,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Update a serial number"""
     db_serial = db.query(SerialNumber).filter(SerialNumber.id == serial_id).first()
@@ -141,8 +144,9 @@ async def update_serial_number(
 @require_permission("serial_numbers_delete")
 async def delete_serial_number(
     serial_id: int,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Delete a serial number"""
     db_serial = db.query(SerialNumber).filter(SerialNumber.id == serial_id).first()

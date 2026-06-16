@@ -23,6 +23,7 @@ async def get_stock_levels(
     search: Optional[str] = None,
     low_stock: bool = False,
     authorization: str = Header(None),
+    current_user = None,
     db: Session = Depends(get_db)
 ):
     """Get stock levels for all products"""
@@ -63,6 +64,7 @@ async def get_stock_movements(
     page: int = 1,
     pageSize: int = 10,
     authorization: str = Header(None),
+    current_user = None,
     db: Session = Depends(get_db)
 ):
     """Get stock movements"""
@@ -103,6 +105,7 @@ async def get_stock_movements(
 async def adjust_stock(
     adjustment: StockAdjustment,
     authorization: str = Header(None),
+    current_user = None,
     db: Session = Depends(get_db)
 ):
     """Adjust stock for a product"""

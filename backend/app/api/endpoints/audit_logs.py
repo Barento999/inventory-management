@@ -34,8 +34,9 @@ class AuditLogSchema(AuditLogBase):
 async def list_audit_logs(
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Get all audit logs"""
     query = db.query(AuditLog)
@@ -72,8 +73,9 @@ async def list_audit_logs(
 @require_permission("audit_logs_view")
 async def create_audit_log(
     log: AuditLogCreate,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Create a new audit log"""
     db_log = AuditLog(**log.dict())

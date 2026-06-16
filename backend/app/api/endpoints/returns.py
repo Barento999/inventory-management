@@ -41,8 +41,9 @@ async def list_returns(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Get all returns"""
     query = db.query(Return)
@@ -84,8 +85,9 @@ async def list_returns(
 @require_permission("returns_create")
 async def create_return(
     return_item: ReturnCreate,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Create a new return"""
     db_return = Return(**return_item.dict())
@@ -110,8 +112,9 @@ async def create_return(
 async def update_return(
     return_id: int,
     return_item: ReturnUpdate,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Update a return"""
     db_return = db.query(Return).filter(Return.id == return_id).first()
@@ -141,8 +144,9 @@ async def update_return(
 @require_permission("returns_delete")
 async def delete_return(
     return_id: int,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Delete a return"""
     db_return = db.query(Return).filter(Return.id == return_id).first()

@@ -42,8 +42,9 @@ async def list_suppliers(
     search: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """List all suppliers with pagination wrapper"""
     query = db.query(Supplier)
@@ -86,8 +87,9 @@ async def list_suppliers(
 @require_permission("suppliers_view")
 async def get_supplier(
     supplier_id: int,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Get a specific supplier"""
     supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
@@ -100,8 +102,9 @@ async def get_supplier(
 @require_permission("suppliers_create")
 async def create_supplier(
     supplier: SupplierCreate,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Create a new supplier"""
     db_supplier = Supplier(**supplier.dict())
@@ -116,8 +119,9 @@ async def create_supplier(
 async def update_supplier(
     supplier_id: int,
     supplier: SupplierUpdate,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Update a supplier"""
     db_supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
@@ -137,8 +141,9 @@ async def update_supplier(
 @require_permission("suppliers_delete")
 async def delete_supplier(
     supplier_id: int,
-    authorization: str = Header(None, current_user = None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Delete a supplier"""
     db_supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()

@@ -36,6 +36,7 @@ class WarehouseSchema(WarehouseBase):
 @require_permission("warehouses_view")
 async def list_warehouses(
     authorization: str = Header(None),
+    current_user = None,
     db: Session = Depends(get_db)
 ):
     """List all warehouses"""
@@ -47,6 +48,7 @@ async def list_warehouses(
 @require_permission("warehouses_view")
 async def list_warehouses_no_slash(
     authorization: str = Header(None),
+    current_user = None,
     db: Session = Depends(get_db)
 ):
     """List all warehouses (no trailing slash)"""
@@ -57,6 +59,7 @@ async def list_warehouses_no_slash(
 @require_permission("warehouses_view")
 async def list_warehouses_paginated(
     authorization: str = Header(None),
+    current_user = None,
     db: Session = Depends(get_db)
 ):
     """List all warehouses with pagination wrapper"""
@@ -84,6 +87,7 @@ async def list_warehouses_paginated(
 async def get_warehouse(
     warehouse_id: int,
     authorization: str = Header(None),
+    current_user = None,
     db: Session = Depends(get_db)
 ):
     """Get a specific warehouse"""
@@ -98,6 +102,7 @@ async def get_warehouse(
 async def create_warehouse(
     warehouse: WarehouseCreate,
     authorization: str = Header(None),
+    current_user = None,
     db: Session = Depends(get_db)
 ):
     """Create a new warehouse"""
@@ -119,6 +124,7 @@ async def update_warehouse(
     warehouse_id: int,
     warehouse: WarehouseUpdate,
     authorization: str = Header(None),
+    current_user = None,
     db: Session = Depends(get_db)
 ):
     """Update a warehouse"""
@@ -145,6 +151,7 @@ async def update_warehouse(
 async def delete_warehouse(
     warehouse_id: int,
     authorization: str = Header(None),
+    current_user = None,
     db: Session = Depends(get_db)
 ):
     """Delete a warehouse"""
