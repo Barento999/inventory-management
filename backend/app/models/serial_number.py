@@ -17,3 +17,5 @@ class SerialNumber(Base):
 
     # Relationships
     product = relationship("Product", backref="serial_numbers")
+    purchase = relationship("Purchase", foreign_keys=[purchase_id])
+    sale = relationship("Sale", foreign_keys=[sale_id])

@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Numeric, Text, DateTime, ForeignKey, func
+from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 
@@ -19,3 +20,7 @@ class Product(Base):
     warehouse_id = Column(Integer, ForeignKey("warehouses.id"))
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Relationships
+    category = relationship("Category", foreign_keys=[category_id])
+    warehouse = relationship("Warehouse", foreign_keys=[warehouse_id])

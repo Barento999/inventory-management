@@ -36,11 +36,12 @@ class InvoiceSchema(InvoiceBase):
         from_attributes = True
 
 
+@router.get("/")
 @require_permission("invoices_view")
 async def list_invoices(
     status: Optional[str] = None,
     page: int = 1,
-    page_size: int = 10,
+    pageSize: int = 10,
     authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
@@ -51,8 +52,8 @@ async def list_invoices(
         query = query.filter(Invoice.status == status)
     
     total = query.count()
-    offset = (page - 1) * page_size
-    invoices = query.order_by(Invoice.created_at.desc()).offset(offset).limit(page_size).all()
+    offset = (page - 1) * pageSize
+    invoices = query.order_by(Invoice.created_at.desc()).offset(offset).limit(pageSize).all()
     
     # Convert to dict manually
     invoices_data = [
@@ -73,9 +74,9 @@ async def list_invoices(
         "data": invoices_data,
         "pagination": {
             "page": page,
-            "pageSize": page_size,
+            "pageSize": pageSize,
             "total": total,
-            "totalPages": (total + page_size - 1) // page_size
+            "totalPages": (total + pageSize - 1) // pageSize
         }
     }
 

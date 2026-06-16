@@ -35,25 +35,13 @@ class QuoteSchema(QuoteBase):
         from_attributes = True
 
 
-@require_permission("sales_view")
-async def list_quotes_no_slash(
-    search: Optional[str] = None,
-    status: Optional[str] = None,
-    page: int = 1,
-    page_size: int = 10,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db)
-):
-    """List all quotes (no trailing slash)"""
-
-
 @router.get("/")
 @require_permission("sales_view")
 async def list_quotes(
     search: Optional[str] = None,
     status: Optional[str] = None,
     page: int = 1,
-    page_size: int = 10,
+    pageSize: int = 10,
     authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
@@ -64,8 +52,8 @@ async def list_quotes(
         query = query.filter(Quote.status == status)
     
     total = query.count()
-    offset = (page - 1) * page_size
-    quotes = query.order_by(Quote.created_at.desc()).offset(offset).limit(page_size).all()
+    offset = (page - 1) * pageSize
+    quotes = query.order_by(Quote.created_at.desc()).offset(offset).limit(pageSize).all()
     
     # Convert to dict manually
     quotes_data = [
@@ -84,9 +72,9 @@ async def list_quotes(
         "data": quotes_data,
         "pagination": {
             "page": page,
-            "pageSize": page_size,
+            "pageSize": pageSize,
             "total": total,
-            "totalPages": (total + page_size - 1) // page_size
+            "totalPages": (total + pageSize - 1) // pageSize
         }
     }
 

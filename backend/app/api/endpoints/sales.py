@@ -33,25 +33,13 @@ class SaleSchema(SaleBase):
         from_attributes = True
 
 
-@require_permission("sales_view")
-async def list_sales_no_slash(
-    search: Optional[str] = None,
-    status: Optional[str] = None,
-    page: int = 1,
-    page_size: int = 10,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db)
-):
-    """List all sales (no trailing slash)"""
-
-
 @router.get("/")
 @require_permission("sales_view")
 async def list_sales(
     search: Optional[str] = None,
     status: Optional[str] = None,
     page: int = 1,
-    page_size: int = 10,
+    pageSize: int = 10,
     authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
@@ -62,8 +50,8 @@ async def list_sales(
         query = query.filter(Sale.status == status)
     
     total = query.count()
-    offset = (page - 1) * page_size
-    sales = query.order_by(Sale.created_at.desc()).offset(offset).limit(page_size).all()
+    offset = (page - 1) * pageSize
+    sales = query.order_by(Sale.created_at.desc()).offset(offset).limit(pageSize).all()
     
     # Convert to dict manually
     sales_data = [
@@ -81,9 +69,9 @@ async def list_sales(
         "data": sales_data,
         "pagination": {
             "page": page,
-            "pageSize": page_size,
+            "pageSize": pageSize,
             "total": total,
-            "totalPages": (total + page_size - 1) // page_size
+            "totalPages": (total + pageSize - 1) // pageSize
         }
     }
 

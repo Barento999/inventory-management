@@ -34,12 +34,13 @@ class SerialNumberSchema(SerialNumberBase):
         from_attributes = True
 
 
+@router.get("/")
 @require_permission("serial_numbers_view")
 async def list_serial_numbers(
     product_id: Optional[int] = None,
     status: Optional[str] = None,
     page: int = 1,
-    page_size: int = 10,
+    pageSize: int = 10,
     authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
@@ -53,8 +54,8 @@ async def list_serial_numbers(
         query = query.filter(SerialNumber.status == status)
     
     total = query.count()
-    offset = (page - 1) * page_size
-    serials = query.order_by(SerialNumber.created_at.desc()).offset(offset).limit(page_size).all()
+    offset = (page - 1) * pageSize
+    serials = query.order_by(SerialNumber.created_at.desc()).offset(offset).limit(pageSize).all()
     
     # Convert to dict manually
     serials_data = [
@@ -74,9 +75,9 @@ async def list_serial_numbers(
         "data": serials_data,
         "pagination": {
             "page": page,
-            "pageSize": page_size,
+            "pageSize": pageSize,
             "total": total,
-            "totalPages": (total + page_size - 1) // page_size
+            "totalPages": (total + pageSize - 1) // pageSize
         }
     }
 

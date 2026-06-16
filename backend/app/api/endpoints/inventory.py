@@ -61,7 +61,7 @@ async def get_stock_movements(
     search: Optional[str] = None,
     type: Optional[str] = None,
     page: int = 1,
-    page_size: int = 10,
+    pageSize: int = 10,
     authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
@@ -72,8 +72,8 @@ async def get_stock_movements(
         query = query.filter(StockMovement.type == type)
     
     total = query.count()
-    offset = (page - 1) * page_size
-    movements = query.order_by(StockMovement.created_at.desc()).offset(offset).limit(page_size).all()
+    offset = (page - 1) * pageSize
+    movements = query.order_by(StockMovement.created_at.desc()).offset(offset).limit(pageSize).all()
     
     # Convert to dict manually
     movements_data = [
@@ -93,8 +93,8 @@ async def get_stock_movements(
         "items": movements_data,
         "total": total,
         "page": page,
-        "pageSize": page_size,
-        "totalPages": (total + page_size - 1) // page_size,
+        "pageSize": pageSize,
+        "totalPages": (total + pageSize - 1) // pageSize,
     }
 
 

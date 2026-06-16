@@ -36,23 +36,12 @@ class SupplierSchema(SupplierBase):
         from_attributes = True
 
 
-@require_permission("suppliers_view")
-async def list_suppliers_no_slash(
-    search: Optional[str] = None,
-    page: int = 1,
-    page_size: int = 10,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db)
-):
-    """List all suppliers (no trailing slash)"""
-
-
 @router.get("/")
 @require_permission("suppliers_view")
 async def list_suppliers(
     search: Optional[str] = None,
     page: int = 1,
-    page_size: int = 10,
+    pageSize: int = 10,
     authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
@@ -66,8 +55,8 @@ async def list_suppliers(
         )
     
     total = query.count()
-    offset = (page - 1) * page_size
-    suppliers = query.offset(offset).limit(page_size).all()
+    offset = (page - 1) * pageSize
+    suppliers = query.offset(offset).limit(pageSize).all()
     
     # Convert to dict manually
     suppliers_data = [
@@ -86,9 +75,9 @@ async def list_suppliers(
         "data": suppliers_data,
         "pagination": {
             "page": page,
-            "pageSize": page_size,
+            "pageSize": pageSize,
             "total": total,
-            "totalPages": (total + page_size - 1) // page_size
+            "totalPages": (total + pageSize - 1) // pageSize
         }
     }
 

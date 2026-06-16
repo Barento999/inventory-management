@@ -29,18 +29,19 @@ class AuditLogSchema(AuditLogBase):
         from_attributes = True
 
 
+@router.get("/")
 @require_permission("audit_logs_view")
 async def list_audit_logs(
     page: int = 1,
-    page_size: int = 10,
+    pageSize: int = 10,
     authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """Get all audit logs"""
     query = db.query(AuditLog)
     total = query.count()
-    offset = (page - 1) * page_size
-    logs = query.order_by(AuditLog.created_at.desc()).offset(offset).limit(page_size).all()
+    offset = (page - 1) * pageSize
+    logs = query.order_by(AuditLog.created_at.desc()).offset(offset).limit(pageSize).all()
     
     # Convert to dict manually
     logs_data = [
@@ -60,9 +61,9 @@ async def list_audit_logs(
         "data": logs_data,
         "pagination": {
             "page": page,
-            "pageSize": page_size,
+            "pageSize": pageSize,
             "total": total,
-            "totalPages": (total + page_size - 1) // page_size
+            "totalPages": (total + pageSize - 1) // pageSize
         }
     }
 

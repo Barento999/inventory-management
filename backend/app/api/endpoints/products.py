@@ -56,7 +56,7 @@ async def list_products(
     category_id: Optional[int] = None,
     status: Optional[str] = None,
     page: int = 1,
-    page_size: int = 10,
+    pageSize: int = 10,
     authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
@@ -76,8 +76,8 @@ async def list_products(
         query = query.filter(Product.status == status)
     
     total = query.count()
-    offset = (page - 1) * page_size
-    products = query.offset(offset).limit(page_size).all()
+    offset = (page - 1) * pageSize
+    products = query.offset(offset).limit(pageSize).all()
     
     # Convert to dict manually
     products_data = [
@@ -102,9 +102,9 @@ async def list_products(
         "data": products_data,
         "pagination": {
             "page": page,
-            "pageSize": page_size,
+            "pageSize": pageSize,
             "total": total,
-            "totalPages": (total + page_size - 1) // page_size
+            "totalPages": (total + pageSize - 1) // pageSize
         }
     }
 

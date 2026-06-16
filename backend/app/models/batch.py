@@ -17,3 +17,4 @@ class Batch(Base):
 
     # Relationships
     product = relationship("Product", backref="batches")
+    purchase = relationship("Purchase", foreign_keys=[purchase_id])

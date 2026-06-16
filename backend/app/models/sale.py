@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Numeric, Text, DateTime, ForeignKey, func
+from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 
@@ -12,3 +13,7 @@ class Sale(Base):
     notes = Column(Text)
     user_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, default=func.now())
+
+    # Relationships
+    customer = relationship("Customer", foreign_keys=[customer_id])
+    user = relationship("User", foreign_keys=[user_id])

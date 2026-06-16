@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Numeric, Text, DateTime, Date, ForeignKey, func
+from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 
@@ -12,3 +13,6 @@ class Quote(Base):
     valid_until = Column(Date)
     notes = Column(Text)
     created_at = Column(DateTime, default=func.now())
+
+    # Relationships
+    customer = relationship("Customer", foreign_keys=[customer_id])

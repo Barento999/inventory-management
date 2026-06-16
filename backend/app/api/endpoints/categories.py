@@ -35,7 +35,7 @@ class CategorySchema(CategoryBase):
 async def list_categories(
     search: Optional[str] = None,
     page: int = 1,
-    page_size: int = 10,
+    pageSize: int = 10,
     authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
@@ -46,8 +46,8 @@ async def list_categories(
         query = query.filter(Category.name.ilike(f"%{search}%"))
     
     total = query.count()
-    offset = (page - 1) * page_size
-    categories = query.offset(offset).limit(page_size).all()
+    offset = (page - 1) * pageSize
+    categories = query.offset(offset).limit(pageSize).all()
     
     # Convert to dict manually
     categories_data = [
@@ -59,22 +59,11 @@ async def list_categories(
         "data": categories_data,
         "pagination": {
             "page": page,
-            "pageSize": page_size,
+            "pageSize": pageSize,
             "total": total,
-            "totalPages": (total + page_size - 1) // page_size
+            "totalPages": (total + pageSize - 1) // pageSize
         }
     }
-
-
-@require_permission("categories_view")
-async def list_categories_no_slash(
-    search: Optional[str] = None,
-    page: int = 1,
-    page_size: int = 10,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db)
-):
-    """List all categories (no trailing slash)"""
 
 
 @router.get("/{category_id}", response_model=CategorySchema)

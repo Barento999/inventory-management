@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Numeric, Text, DateTime, Date, ForeignKey, func
+from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 
@@ -13,3 +14,7 @@ class Purchase(Base):
     notes = Column(Text)
     user_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, default=func.now())
+
+    # Relationships
+    supplier = relationship("Supplier", foreign_keys=[supplier_id])
+    user = relationship("User", foreign_keys=[user_id])
