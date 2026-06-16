@@ -57,7 +57,7 @@ async def list_products(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """List all products with pagination wrapper"""
@@ -113,7 +113,7 @@ async def list_products(
 @require_permission("products_view")
 async def get_product(
     product_id: int,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Get a specific product"""
@@ -127,7 +127,7 @@ async def get_product(
 @require_permission("products_create")
 async def create_product(
     product: ProductCreate,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Create a new product"""
@@ -143,7 +143,7 @@ async def create_product(
 async def update_product(
     product_id: int, 
     product: ProductUpdate, 
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Update a product"""
@@ -164,7 +164,7 @@ async def update_product(
 @require_permission("products_delete")
 async def delete_product(
     product_id: int,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Delete a product"""

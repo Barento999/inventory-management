@@ -11,7 +11,8 @@ router = APIRouter()
 @require_permission("reports_view")
 async def get_dashboard_summary(
     authorization: str = Header(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Get dashboard summary statistics"""
     
@@ -69,7 +70,8 @@ async def get_dashboard_summary(
 @require_permission("reports_view")
 async def get_top_products(
     authorization: str = Header(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user = None
 ):
     """Get top selling products"""
     # For now, return top products by stock value

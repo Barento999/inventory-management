@@ -40,7 +40,7 @@ async def list_customers(
     search: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """List all customers with pagination wrapper"""
@@ -77,7 +77,7 @@ async def list_customers(
 @require_permission("customers_view")
 async def get_customer(
     customer_id: int,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Get a specific customer"""
@@ -91,7 +91,7 @@ async def get_customer(
 @require_permission("customers_create")
 async def create_customer(
     customer: CustomerCreate,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Create a new customer"""
@@ -107,7 +107,7 @@ async def create_customer(
 async def update_customer(
     customer_id: int,
     customer: CustomerUpdate,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Update a customer"""
@@ -128,7 +128,7 @@ async def update_customer(
 @require_permission("customers_delete")
 async def delete_customer(
     customer_id: int,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Delete a customer"""

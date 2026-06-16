@@ -41,7 +41,7 @@ async def list_serial_numbers(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Get all serial numbers"""
@@ -86,7 +86,7 @@ async def list_serial_numbers(
 @require_permission("serial_numbers_create")
 async def create_serial_number(
     serial: SerialNumberCreate,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Create a new serial number"""
@@ -111,7 +111,7 @@ async def create_serial_number(
 async def update_serial_number(
     serial_id: int,
     serial: SerialNumberUpdate,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Update a serial number"""
@@ -141,7 +141,7 @@ async def update_serial_number(
 @require_permission("serial_numbers_delete")
 async def delete_serial_number(
     serial_id: int,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Delete a serial number"""

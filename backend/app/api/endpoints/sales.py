@@ -40,7 +40,7 @@ async def list_sales(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """List all sales with pagination wrapper"""
@@ -80,7 +80,7 @@ async def list_sales(
 @require_permission("sales_view")
 async def get_sale(
     sale_id: int,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Get a specific sale"""
@@ -94,7 +94,7 @@ async def get_sale(
 @require_permission("sales_create")
 async def create_sale(
     sale: SaleCreate,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Create a new sale"""
@@ -110,7 +110,7 @@ async def create_sale(
 async def update_sale(
     sale_id: int,
     sale: SaleUpdate,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Update a sale"""
@@ -131,7 +131,7 @@ async def update_sale(
 @require_permission("sales_delete")
 async def delete_sale(
     sale_id: int,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Delete a sale"""

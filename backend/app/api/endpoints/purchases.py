@@ -54,7 +54,7 @@ async def list_purchases(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """List all purchases with pagination wrapper"""
@@ -95,7 +95,7 @@ async def list_purchases(
 @require_permission("purchases_view")
 async def get_purchase(
     purchase_id: int,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Get a specific purchase"""
@@ -109,7 +109,7 @@ async def get_purchase(
 @require_permission("purchases_create")
 async def create_purchase(
     purchase: PurchaseCreate,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Create a new purchase"""
@@ -125,7 +125,7 @@ async def create_purchase(
 async def update_purchase(
     purchase_id: int,
     purchase: PurchaseUpdate,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Update a purchase"""
@@ -146,7 +146,7 @@ async def update_purchase(
 @require_permission("purchases_delete")
 async def delete_purchase(
     purchase_id: int,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Delete a purchase"""

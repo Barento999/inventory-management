@@ -42,7 +42,7 @@ async def list_invoices(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Get all invoices"""
@@ -85,7 +85,7 @@ async def list_invoices(
 @require_permission("invoices_create")
 async def create_invoice(
     invoice: InvoiceCreate,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Create a new invoice"""
@@ -111,7 +111,7 @@ async def create_invoice(
 async def update_invoice(
     invoice_id: int,
     invoice: InvoiceUpdate,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Update an invoice"""
@@ -142,7 +142,7 @@ async def update_invoice(
 @require_permission("invoices_update")
 async def mark_invoice_paid(
     invoice_id: int,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Mark invoice as paid"""
@@ -172,7 +172,7 @@ async def mark_invoice_paid(
 @require_permission("invoices_delete")
 async def delete_invoice(
     invoice_id: int,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Delete an invoice"""

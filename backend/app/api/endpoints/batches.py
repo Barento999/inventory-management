@@ -40,7 +40,7 @@ async def list_batches(
     product_id: Optional[int] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Get all batches"""
@@ -82,7 +82,7 @@ async def list_batches(
 @require_permission("batches_create")
 async def create_batch(
     batch: BatchCreate,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Create a new batch"""
@@ -107,7 +107,7 @@ async def create_batch(
 async def update_batch(
     batch_id: int,
     batch: BatchUpdate,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Update a batch"""
@@ -137,7 +137,7 @@ async def update_batch(
 @require_permission("batches_delete")
 async def delete_batch(
     batch_id: int,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Delete a batch"""

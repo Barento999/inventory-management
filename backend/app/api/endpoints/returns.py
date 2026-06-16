@@ -41,7 +41,7 @@ async def list_returns(
     status: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Get all returns"""
@@ -84,7 +84,7 @@ async def list_returns(
 @require_permission("returns_create")
 async def create_return(
     return_item: ReturnCreate,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Create a new return"""
@@ -110,7 +110,7 @@ async def create_return(
 async def update_return(
     return_id: int,
     return_item: ReturnUpdate,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Update a return"""
@@ -141,7 +141,7 @@ async def update_return(
 @require_permission("returns_delete")
 async def delete_return(
     return_id: int,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Delete a return"""

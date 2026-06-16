@@ -42,7 +42,7 @@ async def list_suppliers(
     search: Optional[str] = None,
     page: int = 1,
     pageSize: int = 10,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """List all suppliers with pagination wrapper"""
@@ -86,7 +86,7 @@ async def list_suppliers(
 @require_permission("suppliers_view")
 async def get_supplier(
     supplier_id: int,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Get a specific supplier"""
@@ -100,7 +100,7 @@ async def get_supplier(
 @require_permission("suppliers_create")
 async def create_supplier(
     supplier: SupplierCreate,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Create a new supplier"""
@@ -116,7 +116,7 @@ async def create_supplier(
 async def update_supplier(
     supplier_id: int,
     supplier: SupplierUpdate,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Update a supplier"""
@@ -137,7 +137,7 @@ async def update_supplier(
 @require_permission("suppliers_delete")
 async def delete_supplier(
     supplier_id: int,
-    authorization: str = Header(None),
+    authorization: str = Header(None, current_user = None),
     db: Session = Depends(get_db)
 ):
     """Delete a supplier"""
