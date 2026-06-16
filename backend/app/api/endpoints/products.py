@@ -114,9 +114,9 @@ async def list_products(
 @require_permission("products_view")
 async def get_product(
     product_id: int,
-    authorization: str = Header(None, current_user = None),
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
-):
+, current_user = None):
     """Get a specific product"""
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
@@ -128,9 +128,9 @@ async def get_product(
 @require_permission("products_create")
 async def create_product(
     product: ProductCreate,
-    authorization: str = Header(None, current_user = None),
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
-):
+, current_user = None):
     """Create a new product"""
     db_product = Product(**product.dict())
     db.add(db_product)
@@ -144,9 +144,9 @@ async def create_product(
 async def update_product(
     product_id: int, 
     product: ProductUpdate, 
-    authorization: str = Header(None, current_user = None),
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
-):
+, current_user = None):
     """Update a product"""
     db_product = db.query(Product).filter(Product.id == product_id).first()
     if not db_product:
@@ -165,9 +165,9 @@ async def update_product(
 @require_permission("products_delete")
 async def delete_product(
     product_id: int,
-    authorization: str = Header(None, current_user = None),
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
-):
+, current_user = None):
     """Delete a product"""
     db_product = db.query(Product).filter(Product.id == product_id).first()
     if not db_product:
