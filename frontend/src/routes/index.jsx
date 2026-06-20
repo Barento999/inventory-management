@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
+import { ProtectedRoute, AccessDenied } from '../components/ProtectedRoute';
 import Dashboard from '../pages/dashboard/Dashboard';
 import Login from '../pages/auth/Login';
 import Register from '../pages/auth/Register';
@@ -73,34 +74,34 @@ export default function AppRoutes() {
           </RequireAuth>
         }
       >
-        <Route index element={<Dashboard />} />
-        <Route path="products" element={<ProductList />} />
-        <Route path="products/create" element={<ProductDetails />} />
-        <Route path="products/:id" element={<ProductDetails />} />
-        <Route path="categories" element={<CategoryList />} />
-        <Route path="categories/:id" element={<CategoryDetails />} />
-        <Route path="suppliers" element={<SupplierList />} />
-        <Route path="vendors" element={<VendorPortal />} />
-        <Route path="customers" element={<CustomerList />} />
-        <Route path="warehouses" element={<WarehouseList />} />
-        <Route path="warehouses/create" element={<WarehouseDetails />} />
-        <Route path="warehouses/:id" element={<WarehouseDetails />} />
-        <Route path="serial-numbers" element={<SerialNumberList />} />
-        <Route path="batches" element={<BatchList />} />
-        <Route path="quotes" element={<QuoteList />} />
-        <Route path="returns" element={<ReturnList />} />
-        <Route path="invoices" element={<InvoiceList />} />
-        <Route path="users" element={<UserList />} />
-        <Route path="audit-logs" element={<AuditLogList />} />
-        <Route path="shipping" element={<ShippingList />} />
-        <Route path="inventory" element={<Inventory />} />
-        <Route path="purchases" element={<PurchaseList />} />
-        <Route path="sales" element={<SaleList />} />
-        <Route path="calendar" element={<OrderCalendar />} />
-        <Route path="kanban" element={<OrderKanban />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="reports/custom" element={<CustomReportBuilder />} />
-        <Route path="settings" element={<Settings />} />
+        <Route index element={<ProtectedRoute permission="reports_view"><Dashboard /></ProtectedRoute>} />
+        <Route path="products" element={<ProtectedRoute permission="products_view"><ProductList /></ProtectedRoute>} />
+        <Route path="products/create" element={<ProtectedRoute permission="products_create"><ProductDetails /></ProtectedRoute>} />
+        <Route path="products/:id" element={<ProtectedRoute permission="products_view"><ProductDetails /></ProtectedRoute>} />
+        <Route path="categories" element={<ProtectedRoute permission="categories_view"><CategoryList /></ProtectedRoute>} />
+        <Route path="categories/:id" element={<ProtectedRoute permission="categories_view"><CategoryDetails /></ProtectedRoute>} />
+        <Route path="suppliers" element={<ProtectedRoute permission="suppliers_view"><SupplierList /></ProtectedRoute>} />
+        <Route path="vendors" element={<ProtectedRoute permission="suppliers_view"><VendorPortal /></ProtectedRoute>} />
+        <Route path="customers" element={<ProtectedRoute permission="customers_view"><CustomerList /></ProtectedRoute>} />
+        <Route path="warehouses" element={<ProtectedRoute permission="warehouses_view"><WarehouseList /></ProtectedRoute>} />
+        <Route path="warehouses/create" element={<ProtectedRoute permission="warehouses_create"><WarehouseDetails /></ProtectedRoute>} />
+        <Route path="warehouses/:id" element={<ProtectedRoute permission="warehouses_view"><WarehouseDetails /></ProtectedRoute>} />
+        <Route path="serial-numbers" element={<ProtectedRoute permission="serial_numbers_view"><SerialNumberList /></ProtectedRoute>} />
+        <Route path="batches" element={<ProtectedRoute permission="batches_view"><BatchList /></ProtectedRoute>} />
+        <Route path="quotes" element={<ProtectedRoute permission="quotes_view"><QuoteList /></ProtectedRoute>} />
+        <Route path="returns" element={<ProtectedRoute permission="returns_view"><ReturnList /></ProtectedRoute>} />
+        <Route path="invoices" element={<ProtectedRoute permission="invoices_view"><InvoiceList /></ProtectedRoute>} />
+        <Route path="users" element={<ProtectedRoute permission="users_view"><UserList /></ProtectedRoute>} />
+        <Route path="audit-logs" element={<ProtectedRoute permission="audit_logs_view"><AuditLogList /></ProtectedRoute>} />
+        <Route path="shipping" element={<ProtectedRoute permission="sales_view"><ShippingList /></ProtectedRoute>} />
+        <Route path="inventory" element={<ProtectedRoute permission="inventory_view"><Inventory /></ProtectedRoute>} />
+        <Route path="purchases" element={<ProtectedRoute permission="purchases_view"><PurchaseList /></ProtectedRoute>} />
+        <Route path="sales" element={<ProtectedRoute permission="sales_view"><SaleList /></ProtectedRoute>} />
+        <Route path="calendar" element={<ProtectedRoute permission="sales_view"><OrderCalendar /></ProtectedRoute>} />
+        <Route path="kanban" element={<ProtectedRoute permission="sales_view"><OrderKanban /></ProtectedRoute>} />
+        <Route path="reports" element={<ProtectedRoute permission="reports_view"><Reports /></ProtectedRoute>} />
+        <Route path="reports/custom" element={<ProtectedRoute permission="reports_view"><CustomReportBuilder /></ProtectedRoute>} />
+        <Route path="settings" element={<ProtectedRoute permission="settings_view"><Settings /></ProtectedRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
