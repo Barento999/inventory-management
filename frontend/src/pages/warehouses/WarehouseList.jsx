@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Table from '../../components/ui/Table';
 import Loader from '../../components/ui/Loader';
@@ -13,6 +13,7 @@ import { useDataRefresh } from '../../context/DataRefreshContext';
 import { useToast } from '../../context/ToastContext';
 
 export default function WarehouseList() {
+  const navigate = useNavigate();
   const { version, refresh } = useDataRefresh();
   const { addToast } = useToast();
   const [deleteId, setDeleteId] = useState(null);
@@ -41,7 +42,7 @@ export default function WarehouseList() {
     ) },
     { key: 'actions', title: 'Actions', render: (row) => (
       <div className="flex gap-2">
-        <Link to={`/warehouses/${row.id}`} className="text-primary hover:underline text-sm">Edit</Link>
+        <button type="button" onClick={() => navigate(`/warehouses/${row.id}`)} className="text-primary hover:underline text-sm">Edit</button>
         <button type="button" onClick={() => setDeleteId(row.id)} className="text-red-600 hover:underline text-sm">Delete</button>
       </div>
     ) },
@@ -53,9 +54,7 @@ export default function WarehouseList() {
         title="Warehouses"
         subtitle="Manage your warehouse locations"
         action={
-          <Link to="/warehouses/create">
-            <Button>Add Warehouse</Button>
-          </Link>
+          <Button onClick={() => navigate('/warehouses/create')}>Add Warehouse</Button>
         }
       />
 

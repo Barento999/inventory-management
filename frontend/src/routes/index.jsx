@@ -29,6 +29,7 @@ import QuoteList from '../pages/quotes/QuoteList';
 import ReturnList from '../pages/returns/ReturnList';
 import InvoiceList from '../pages/invoices/InvoiceList';
 import UserList from '../pages/users/UserList';
+import UserDetails from '../pages/users/UserDetails';
 import AuditLogList from '../pages/audit-logs/AuditLogList';
 import ShippingList from '../pages/shipping/ShippingList';
 import VendorPortal from '../pages/vendors/VendorPortal';
@@ -99,6 +100,8 @@ export default function AppRoutes() {
         <Route path="returns" element={<ProtectedRoute permission="returns_view"><ReturnList /></ProtectedRoute>} />
         <Route path="invoices" element={<ProtectedRoute permission="invoices_view"><InvoiceList /></ProtectedRoute>} />
         <Route path="users" element={<ProtectedRoute permission="users_view"><UserList /></ProtectedRoute>} />
+        <Route path="users/create" element={<ProtectedRoute permission="users_create"><UserDetails /></ProtectedRoute>} />
+        <Route path="users/:id" element={<ProtectedRoute permission="users_view"><UserDetails /></ProtectedRoute>} />
         <Route path="audit-logs" element={<ProtectedRoute permission="audit_logs_view"><AuditLogList /></ProtectedRoute>} />
         <Route path="shipping" element={<ProtectedRoute permission="sales_view"><ShippingList /></ProtectedRoute>} />
         <Route path="inventory" element={<ProtectedRoute permission="inventory_view"><Inventory /></ProtectedRoute>} />
