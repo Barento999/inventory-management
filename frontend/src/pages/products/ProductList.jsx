@@ -1,195 +1,194 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import Card from '../../components/ui/Card';
-import Table from '../../components/ui/Table';
-import Loader from '../../components/ui/Loader';
-import Badge from '../../components/ui/Badge';
-import Pagination from '../../components/ui/Pagination';
-import Input from '../../components/ui/Input';
-import Select from '../../components/ui/Select';
-import Button from '../../components/ui/Button';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
-import BulkActions from '../../components/ui/BulkActions';
-import AdvancedSearch from '../../components/ui/AdvancedSearch';
-import PageHeader, { FilterBar } from '../../components/shared/PageHeader';
-import { useApi } from '../../hooks/useApi';
-import { productsApi, categoriesApi } from '../../services/api';
-import { useDataRefresh } from '../../context/DataRefreshContext';
+import apiClient from '../../services/apiClient';
+import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { formatCurrency } from '../../utils/format';
 
 export default function ProductList() {
-  const { version, refresh } = useDataRefresh();
+  const { user } = useAuth();
   const { addToast } = useToast();
-  const [search, setSearch] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [status, setStatus] = useState('');
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [deleteId, setDeleteId] = useState(null);
-  const [selectedIds, setSelectedIds] = useState([]);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState('');
+  const [deleting, setDeleting] = useState(null);
 
-  const { data: result, loading, reload } = useApi(
-    () => productsApi.list({ search, categoryId, status, page, pageSize: 8 }),
-    [version, search, categoryId, status, page]
-  );
-  const { data: categories } = useApi(() => categoriesApi.list({ pageSize: 100 }), [version]);
+  useEffect(() => {
+    fetchProducts();
+  }, [page, search]);
 
-  const handleDelete = async () => {
+  async function fetchProducts() {
     try {
-      await productsApi.delete(deleteId);
-      addToast({ title: 'Product deleted', type: 'success' });
-      refresh();
-      reload();
-    } catch (err) {
-      addToast({ title: err.message, type: 'error' });
+      setLoading(true);
+      const params = {
+        page,
+        pageSize,
+        search: search || undefined,
+      };
+      const response = await apiClient.get('/products/', { params });
+      setProducts(response.data || []);
+      setTotal(response.total || 0);
+    } catch (error) {
+      addToast({
+        title: 'Error',
+        description: 'Failed to load products',
+        type: 'error',
+      });
+    } finally {
+      setLoading(false);
     }
-  };
+  }
 
-  const handleBulkDelete = async (ids) => {
+  async function handleDelete(id) {
+    if (!window.confirm('Delete this product?')) return;
+    
     try {
-      for (const id of ids) {
-        await productsApi.delete(id);
-      }
-      addToast({ title: `${ids.length} products deleted`, type: 'success' });
-      setSelectedIds([]);
-      refresh();
-      reload();
-    } catch (err) {
-      addToast({ title: err.message, type: 'error' });
+      setDeleting(id);
+      await apiClient.delete(`/products/${id}`);
+      addToast({
+        title: 'Success',
+        description: 'Product deleted',
+        type: 'success',
+      });
+      await fetchProducts();
+    } catch (error) {
+      addToast({
+        title: 'Error',
+        description: 'Failed to delete product',
+        type: 'error',
+      });
+    } finally {
+      setDeleting(null);
     }
-  };
+  }
 
-  const handleBulkExport = async (ids) => {
-    const products = (result?.data || []).filter(p => ids.includes(p.id));
-    const headers = ['id', 'name', 'sku', 'category', 'price', 'cost', 'stock', 'status'];
-    const rows = products.map(p => headers.map(h => p[h]));
-    const csv = headers.join(',') + '\n' + rows.map(r => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'products-export.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-    addToast({ title: 'Products exported', type: 'success' });
-  };
-
-  const handleBulkEdit = async (ids, field, value) => {
-    try {
-      for (const id of ids) {
-        await productsApi.update(id, { [field]: value });
-      }
-      addToast({ title: `${ids.length} products updated`, type: 'success' });
-      setSelectedIds([]);
-      refresh();
-      reload();
-    } catch (err) {
-      addToast({ title: err.message, type: 'error' });
-    }
-  };
-
-  const columns = [
-    { key: 'image', title: 'Image', render: (row) => (
-      <img src={row.image} alt={row.name} className="w-10 h-10 object-cover rounded" />
-    ) },
-    { key: 'name', title: 'Product' },
-    { key: 'sku', title: 'SKU' },
-    { key: 'category', title: 'Category' },
-    { key: 'price', title: 'Price', render: (row) => formatCurrency(row.price) },
-    { key: 'stock', title: 'Stock', render: (row) => (
-      <span className={row.stock <= row.reorderLevel ? 'text-red-600 font-medium' : ''}>{row.stock}</span>
-    ) },
-    { key: 'status', title: 'Status', render: (row) => (
-      <Badge variant={row.status === 'Active' ? 'success' : 'default'}>{row.status}</Badge>
-    ) },
-    { key: 'actions', title: 'Actions', render: (row) => (
-      <div className="flex gap-2">
-        <Link to={`/products/${row.id}`} className="text-primary hover:underline text-sm">Edit</Link>
-        <button type="button" onClick={() => setDeleteId(row.id)} className="text-red-600 hover:underline text-sm">Delete</button>
-      </div>
-    ) },
-  ];
+  const canCreate = user?.permissions?.includes('products_create');
+  const canUpdate = user?.permissions?.includes('products_update');
+  const canDelete = user?.permissions?.includes('products_delete');
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="Products"
-        subtitle="Manage your product catalog"
-        action={
-          <Link to="/products/create">
-            <Button>Add Product</Button>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Products</h1>
+        {canCreate && (
+          <Link
+            to="/products/create"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Add Product
           </Link>
-        }
-      />
+        )}
+      </div>
 
-      <FilterBar>
-        <AdvancedSearch
-          entityType="products"
-          fields={[
-            { value: 'name', label: 'Name' },
-            { value: 'sku', label: 'SKU' },
-            { value: 'category', label: 'Category' },
-            { value: 'status', label: 'Status' },
-            { value: 'price', label: 'Price' },
-          ]}
-          onSearch={({ searchTerm, filters }) => {
-            setSearch(searchTerm);
+      <div className="flex gap-4">
+        <input
+          type="text"
+          placeholder="Search products..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
             setPage(1);
           }}
+          className="flex-1 px-4 py-2 border rounded-lg"
         />
-        <Select
-          id="category"
-          value={categoryId}
-          onChange={(e) => { setCategoryId(e.target.value); setPage(1); }}
-          options={[{ value: '', label: 'All categories' }, ...(categories?.data?.map((c) => ({ value: c.id, label: c.name })) || [])]}
-        />
-        <Select
-          id="status"
-          value={status}
-          onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-          options={[
-            { value: '', label: 'All statuses' },
-            { value: 'Active', label: 'Active' },
-            { value: 'Inactive', label: 'Inactive' },
-          ]}
-        />
-      </FilterBar>
+      </div>
 
-      <BulkActions
-        selectedIds={selectedIds}
-        onBulkDelete={handleBulkDelete}
-        onBulkExport={handleBulkExport}
-        onBulkEdit={handleBulkEdit}
-        entityType="products"
-      />
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      ) : products.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">No products found</div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse border border-gray-200">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border p-3 text-left">SKU</th>
+                <th className="border p-3 text-left">Name</th>
+                <th className="border p-3 text-right">Price</th>
+                <th className="border p-3 text-right">Cost</th>
+                <th className="border p-3 text-right">Stock</th>
+                <th className="border p-3 text-center">Status</th>
+                <th className="border p-3 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((product) => (
+                <tr key={product.id} className="hover:bg-gray-50">
+                  <td className="border p-3 font-mono text-sm">{product.sku}</td>
+                  <td className="border p-3">
+                    <Link to={`/products/${product.id}`} className="text-blue-600 hover:underline">
+                      {product.name}
+                    </Link>
+                  </td>
+                  <td className="border p-3 text-right">${product.price?.toFixed(2)}</td>
+                  <td className="border p-3 text-right">${product.cost?.toFixed(2)}</td>
+                  <td className="border p-3 text-right">{product.stock}</td>
+                  <td className="border p-3 text-center">
+                    <span className={`px-2 py-1 rounded text-sm font-medium ${
+                      product.status === 'Active'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {product.status}
+                    </span>
+                  </td>
+                  <td className="border p-3 text-center space-x-2">
+                    <Link
+                      to={`/products/${product.id}`}
+                      className="text-blue-600 hover:underline text-sm"
+                    >
+                      View
+                    </Link>
+                    {canUpdate && (
+                      <Link
+                        to={`/products/${product.id}`}
+                        className="text-blue-600 hover:underline text-sm"
+                      >
+                        Edit
+                      </Link>
+                    )}
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDelete(product.id)}
+                        disabled={deleting === product.id}
+                        className="text-red-600 hover:underline text-sm disabled:opacity-50"
+                      >
+                        {deleting === product.id ? 'Deleting...' : 'Delete'}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-      <Card>
-        {loading ? <Loader /> : (
-          <>
-            <Table
-              columns={columns}
-              data={result?.data || []}
-              selectable
-              onSelectChange={setSelectedIds}
-            />
-            {result?.pagination?.totalPages > 1 && (
-              <Pagination
-                current={result.pagination.page}
-                total={result.pagination.totalPages}
-                onPageChange={setPage}
-              />
-            )}
-          </>
-        )}
-      </Card>
-
-      <ConfirmDialog
-        isOpen={!!deleteId}
-        onClose={() => setDeleteId(null)}
-        onConfirm={handleDelete}
-        title="Delete Product"
-        message="Are you sure you want to delete this product? This cannot be undone."
-      />
+      <div className="flex justify-between items-center">
+        <div className="text-sm text-gray-600">
+          Showing page {page} of {Math.ceil(total / pageSize)} ({total} total)
+        </div>
+        <div className="space-x-2">
+          <button
+            onClick={() => setPage(Math.max(1, page - 1))}
+            disabled={page === 1}
+            className="px-4 py-2 border rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <button
+            onClick={() => setPage(page + 1)}
+            disabled={page >= Math.ceil(total / pageSize)}
+            className="px-4 py-2 border rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

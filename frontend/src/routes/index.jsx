@@ -13,6 +13,7 @@ import CategoryList from '../pages/categories/CategoryList';
 import CategoryDetails from '../pages/categories/CategoryDetails';
 import SupplierList from '../pages/suppliers/SupplierList';
 import CustomerList from '../pages/customers/CustomerList';
+import CustomerDetails from '../pages/customers/CustomerDetails';
 import Inventory from '../pages/inventory/Inventory';
 import PurchaseList from '../pages/purchases/PurchaseList';
 import SaleList from '../pages/sales/SaleList';
@@ -83,6 +84,8 @@ export default function AppRoutes() {
         <Route path="suppliers" element={<ProtectedRoute permission="suppliers_view"><SupplierList /></ProtectedRoute>} />
         <Route path="vendors" element={<ProtectedRoute permission="suppliers_view"><VendorPortal /></ProtectedRoute>} />
         <Route path="customers" element={<ProtectedRoute permission="customers_view"><CustomerList /></ProtectedRoute>} />
+        <Route path="customers/create" element={<ProtectedRoute permission="customers_create"><CustomerDetails /></ProtectedRoute>} />
+        <Route path="customers/:id" element={<ProtectedRoute permission="customers_view"><CustomerDetails /></ProtectedRoute>} />
         <Route path="warehouses" element={<ProtectedRoute permission="warehouses_view"><WarehouseList /></ProtectedRoute>} />
         <Route path="warehouses/create" element={<ProtectedRoute permission="warehouses_create"><WarehouseDetails /></ProtectedRoute>} />
         <Route path="warehouses/:id" element={<ProtectedRoute permission="warehouses_view"><WarehouseDetails /></ProtectedRoute>} />

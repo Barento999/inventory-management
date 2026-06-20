@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Table from '../../components/ui/Table';
 import Loader from '../../components/ui/Loader';
 import EmptyState from '../../components/ui/EmptyState';
-import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Pagination from '../../components/ui/Pagination';
@@ -17,12 +16,11 @@ import { useDataRefresh } from '../../context/DataRefreshContext';
 import { useToast } from '../../context/ToastContext';
 
 export default function CustomerList() {
+  const navigate = useNavigate();
   const { version, refresh } = useDataRefresh();
   const { addToast } = useToast();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editItem, setEditItem] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
 
@@ -31,35 +29,12 @@ export default function CustomerList() {
     [version, search, page]
   );
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm();
-
   const openCreate = () => {
-    setEditItem(null);
-    reset({ name: '', email: '', phone: '', address: '' });
-    setModalOpen(true);
+    navigate('/customers/create');
   };
 
   const openEdit = (item) => {
-    setEditItem(item);
-    reset(item);
-    setModalOpen(true);
-  };
-
-  const onSubmit = async (data) => {
-    try {
-      if (editItem) {
-        await customersApi.update(editItem.id, data);
-        addToast({ title: 'Customer updated', type: 'success' });
-      } else {
-        await customersApi.create(data);
-        addToast({ title: 'Customer created', type: 'success' });
-      }
-      setModalOpen(false);
-      refresh();
-      reload();
-    } catch (err) {
-      addToast({ title: err.message, type: 'error' });
-    }
+    navigate(`/customers/${item.id}`);
   };
 
   const handleDelete = async () => {
@@ -154,21 +129,6 @@ export default function CustomerList() {
           </>
         )}
       </Card>
-
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editItem ? 'Edit Customer' : 'Add Customer'}>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <Input id="name" label="Name" error={errors.name?.message}
-            {...register('name', { required: 'Name is required' })} />
-          <Input id="email" label="Email" type="email" error={errors.email?.message}
-            {...register('email', { required: 'Email is required' })} />
-          <Input id="phone" label="Phone" {...register('phone')} />
-          <Input id="address" label="Address" {...register('address')} />
-          <div className="flex gap-2 justify-end">
-            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={isSubmitting}>Save</Button>
-          </div>
-        </form>
-      </Modal>
 
       <ConfirmDialog isOpen={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={handleDelete}
         title="Delete Customer" message="Are you sure you want to delete this customer?" />
