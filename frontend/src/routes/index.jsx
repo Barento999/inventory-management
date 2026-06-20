@@ -15,9 +15,11 @@ import SupplierList from '../pages/suppliers/SupplierList';
 import SupplierDetails from '../pages/suppliers/SupplierDetails';
 import CustomerList from '../pages/customers/CustomerList';
 import CustomerDetails from '../pages/customers/CustomerDetails';
-import Inventory from '../pages/inventory/Inventory';
+import Inventory from '../pages/inventory/InventoryManagement';
 import PurchaseList from '../pages/purchases/PurchaseList';
+import PurchaseDetails from '../pages/purchases/PurchaseDetails';
 import SaleList from '../pages/sales/SaleList';
+import SaleDetails from '../pages/sales/SaleDetails';
 import Reports from '../pages/reports/Reports';
 import CustomReportBuilder from '../pages/reports/CustomReportBuilder';
 import Settings from '../pages/settings/Settings';
@@ -118,7 +120,11 @@ export default function AppRoutes() {
         <Route path="shipping" element={<ProtectedRoute permission="sales_view"><ShippingList /></ProtectedRoute>} />
         <Route path="inventory" element={<ProtectedRoute permission="inventory_view"><Inventory /></ProtectedRoute>} />
         <Route path="purchases" element={<ProtectedRoute permission="purchases_view"><PurchaseList /></ProtectedRoute>} />
+        <Route path="purchases/create" element={<ProtectedRoute permission="purchases_create"><PurchaseDetails /></ProtectedRoute>} />
+        <Route path="purchases/:id" element={<ProtectedRoute permission="purchases_view"><PurchaseDetails /></ProtectedRoute>} />
         <Route path="sales" element={<ProtectedRoute permission="sales_view"><SaleList /></ProtectedRoute>} />
+        <Route path="sales/create" element={<ProtectedRoute permission="sales_create"><SaleDetails /></ProtectedRoute>} />
+        <Route path="sales/:id" element={<ProtectedRoute permission="sales_view"><SaleDetails /></ProtectedRoute>} />
         <Route path="calendar" element={<ProtectedRoute permission="sales_view"><OrderCalendar /></ProtectedRoute>} />
         <Route path="kanban" element={<ProtectedRoute permission="sales_view"><OrderKanban /></ProtectedRoute>} />
         <Route path="reports" element={<ProtectedRoute permission="reports_view"><Reports /></ProtectedRoute>} />
