@@ -3,6 +3,65 @@
 @tailwind utilities;
 
 @layer base {
+  /* Screen reader only content */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .focus\:not-sr-only:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
+  /* Reduce motion for accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* High contrast mode */
+  .high-contrast {
+    --text-color: #000;
+    --bg-color: #fff;
+    --border-color: #000;
+  }
+
+  .high-contrast * {
+    border-width: 2px;
+  }
+
+  .high-contrast .dark {
+    --text-color: #fff;
+    --bg-color: #000;
+    --border-color: #fff;
+  }
+
+  .high-contrast button:focus,
+  .high-contrast input:focus,
+  .high-contrast select:focus,
+  .high-contrast textarea:focus,
+  .high-contrast a:focus {
+    outline: 3px solid var(--border-color);
+    outline-offset: 2px;
+  }
+
   .dark {
     color-scheme: dark;
   }
@@ -157,6 +216,42 @@
   
   .dark .sidebar-gradient {
     background: linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
+  }
+
+  /* Focus visible for better keyboard navigation */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid #6366F1;
+    outline-offset: 2px;
+  }
+
+  /* Responsive touch targets (minimum 44x44px) */
+  @media (max-width: 768px) {
+    button, a[role="button"], input[type="checkbox"], input[type="radio"] {
+      min-width: 44px;
+      min-height: 44px;
+    }
+  }
+
+  /* Responsive text sizing */
+  .text-responsive-sm {
+    font-size: clamp(0.875rem, 2vw, 1rem);
+  }
+
+  .text-responsive-base {
+    font-size: clamp(1rem, 2.5vw, 1.125rem);
+  }
+
+  .text-responsive-lg {
+    font-size: clamp(1.125rem, 3vw, 1.5rem);
+  }
+
+  /* Improved focus states */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900 focus:ring-blue-500;
   }
 }
 
