@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.core.database import SessionLocal, init_db
 from app.core.security import hash_password
-from app.models import User, Category, Warehouse, Supplier, Customer, Product, Sale, Purchase, Quote
+from app.models import User, Category, Warehouse, Supplier, Customer, Product, Sale, Purchase, Quote, AuditLog, StockMovement, SerialNumber, Batch, Return, Invoice
 from app.seeds.seed_data import CATEGORIES, WAREHOUSES, PRODUCTS, SUPPLIERS, CUSTOMERS
 
 
@@ -270,6 +270,12 @@ def clear_existing_data(db):
     print("\n🗑️ Clearing existing data...")
     
     # Clear in reverse order to handle foreign keys
+    db.query(Return).delete()
+    db.query(Batch).delete()
+    db.query(SerialNumber).delete()
+    db.query(StockMovement).delete()
+    db.query(AuditLog).delete()
+    db.query(Invoice).delete()
     db.query(Quote).delete()
     db.query(Purchase).delete()
     db.query(Sale).delete()
