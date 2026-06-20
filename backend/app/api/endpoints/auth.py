@@ -6,6 +6,7 @@ from app.core.security import hash_password, verify_password, create_access_toke
 from app.core.database import get_db
 from app.core.security_middleware import limiter
 from app.core.validation import validate_email, validate_password, sanitize_input
+from app.core.audit import log_authentication_failure, log_action
 from app.models import User
 
 router = APIRouter()
@@ -53,21 +54,26 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
     """Login endpoint - authenticate user with email and password"""
     # Validate input
     email = validate_email(credentials.email)
+    ip = request.client.host if request.client else "unknown"
     
     # Find user by email
     user = db.query(User).filter(User.email == email).first()
     
     if not user:
+        log_authentication_failure(db, email, "User not found", ip)
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
     # Verify password
     if not verify_password(credentials.password, user.password_hash):
+        log_authentication_failure(db, email, "Invalid password", ip)
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
     # Create JWT token
     access_token = create_access_token(
         data={"sub": user.email, "user_id": user.id, "role": user.role}
     )
+    
+    log_action(db, user, "LOGIN", "authentication", ip_address=ip)
     
     return {
         "access_token": access_token,
@@ -90,10 +96,12 @@ async def register(request: Request, data: UserRegister, db: Session = Depends(g
     email = validate_email(data.email)
     password = validate_password(data.password)
     name = sanitize_input({"name": data.name})["name"]
+    ip = request.client.host if request.client else "unknown"
     
     # Check if email already exists
     existing_user = db.query(User).filter(User.email == email).first()
     if existing_user:
+        log_authentication_failure(db, email, "Email already registered", ip)
         raise HTTPException(status_code=400, detail="Email already registered")
     
     # Create new user
@@ -112,6 +120,8 @@ async def register(request: Request, data: UserRegister, db: Session = Depends(g
     access_token = create_access_token(
         data={"sub": new_user.email, "user_id": new_user.id, "role": "user"}
     )
+    
+    log_action(db, new_user, "REGISTER", "authentication", ip_address=ip)
     
     return {
         "access_token": access_token,
