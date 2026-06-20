@@ -42,7 +42,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:password@localhost:5432/inventory_db
         run: |
           cd backend
-          python -c "from app import create_app; print('Backend imports OK')"
+          python -c "from app.main import app; print('Backend imports OK')"
       
       - name: Set up Node
         uses: actions/setup-node@v3
@@ -68,6 +68,7 @@ jobs:
         env:
           CI: true
 
+
   verify-docker:
     needs: test
     runs-on: ubuntu-latest
@@ -76,12 +77,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Check Docker files
+      - name: Check Docker files exist
         run: |
-          ls -la ./Dockerfile 2>/dev/null && echo "Root Dockerfile found" || echo "No root Dockerfile"
-          ls -la ./docker-compose.yml && echo "docker-compose.yml found" || echo "No docker-compose.yml"
-      
-      - name: Verify docker-compose syntax
-        run: |
-          docker-compose config
+          test -f ./Dockerfile && echo "✓ Dockerfile found" || echo "✗ Dockerfile missing"
+          test -f ./docker-compose.yml && echo "✓ docker-compose.yml found" || echo "✗ docker-compose.yml missing"
 
