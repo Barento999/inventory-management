@@ -19,6 +19,41 @@ services:
     networks:
       - inventory-network
 
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: inventory-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/inventory_db
+      ENVIRONMENT: production
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    networks:
+      - inventory-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: inventory-frontend
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://backend:8000/api
+    ports:
+      - "3000:3000"
+    networks:
+      - inventory-network
+
 volumes:
   postgres_data:
     driver: local
