@@ -26,8 +26,11 @@ import WarehouseDetails from '../pages/warehouses/WarehouseDetails';
 import SerialNumberList from '../pages/serial-numbers/SerialNumberList';
 import BatchList from '../pages/batches/BatchList';
 import QuoteList from '../pages/quotes/QuoteList';
+import QuoteDetails from '../pages/quotes/QuoteDetails';
 import ReturnList from '../pages/returns/ReturnList';
+import ReturnDetails from '../pages/returns/ReturnDetails';
 import InvoiceList from '../pages/invoices/InvoiceList';
+import InvoiceDetails from '../pages/invoices/InvoiceDetails';
 import UserList from '../pages/users/UserList';
 import UserDetails from '../pages/users/UserDetails';
 import AuditLogList from '../pages/audit-logs/AuditLogList';
@@ -97,8 +100,11 @@ export default function AppRoutes() {
         <Route path="serial-numbers" element={<ProtectedRoute permission="serial_numbers_view"><SerialNumberList /></ProtectedRoute>} />
         <Route path="batches" element={<ProtectedRoute permission="batches_view"><BatchList /></ProtectedRoute>} />
         <Route path="quotes" element={<ProtectedRoute permission="quotes_view"><QuoteList /></ProtectedRoute>} />
+        <Route path="quotes/:id" element={<ProtectedRoute permission="quotes_view"><QuoteDetails /></ProtectedRoute>} />
         <Route path="returns" element={<ProtectedRoute permission="returns_view"><ReturnList /></ProtectedRoute>} />
+        <Route path="returns/:id" element={<ProtectedRoute permission="returns_view"><ReturnDetails /></ProtectedRoute>} />
         <Route path="invoices" element={<ProtectedRoute permission="invoices_view"><InvoiceList /></ProtectedRoute>} />
+        <Route path="invoices/:id" element={<ProtectedRoute permission="invoices_view"><InvoiceDetails /></ProtectedRoute>} />
         <Route path="users" element={<ProtectedRoute permission="users_view"><UserList /></ProtectedRoute>} />
         <Route path="users/create" element={<ProtectedRoute permission="users_create"><UserDetails /></ProtectedRoute>} />
         <Route path="users/:id" element={<ProtectedRoute permission="users_view"><UserDetails /></ProtectedRoute>} />
