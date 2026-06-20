@@ -25,6 +25,7 @@ import WarehouseList from '../pages/warehouses/WarehouseList';
 import WarehouseDetails from '../pages/warehouses/WarehouseDetails';
 import SerialNumberList from '../pages/serial-numbers/SerialNumberList';
 import BatchList from '../pages/batches/BatchList';
+import BatchDetails from '../pages/batches/BatchDetails';
 import QuoteList from '../pages/quotes/QuoteList';
 import QuoteDetails from '../pages/quotes/QuoteDetails';
 import ReturnList from '../pages/returns/ReturnList';
@@ -99,6 +100,8 @@ export default function AppRoutes() {
         <Route path="warehouses/:id" element={<ProtectedRoute permission="warehouses_view"><WarehouseDetails /></ProtectedRoute>} />
         <Route path="serial-numbers" element={<ProtectedRoute permission="serial_numbers_view"><SerialNumberList /></ProtectedRoute>} />
         <Route path="batches" element={<ProtectedRoute permission="batches_view"><BatchList /></ProtectedRoute>} />
+        <Route path="batches/create" element={<ProtectedRoute permission="batches_create"><BatchDetails /></ProtectedRoute>} />
+        <Route path="batches/:id" element={<ProtectedRoute permission="batches_view"><BatchDetails /></ProtectedRoute>} />
         <Route path="quotes" element={<ProtectedRoute permission="quotes_view"><QuoteList /></ProtectedRoute>} />
         <Route path="quotes/:id" element={<ProtectedRoute permission="quotes_view"><QuoteDetails /></ProtectedRoute>} />
         <Route path="returns" element={<ProtectedRoute permission="returns_view"><ReturnList /></ProtectedRoute>} />
