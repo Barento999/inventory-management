@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { Link, useNavigate } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Table from '../../components/ui/Table';
 import Loader from '../../components/ui/Loader';
-import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Pagination from '../../components/ui/Pagination';
@@ -16,12 +14,11 @@ import { useDataRefresh } from '../../context/DataRefreshContext';
 import { useToast } from '../../context/ToastContext';
 
 export default function CategoryList() {
+  const navigate = useNavigate();
   const { version, refresh } = useDataRefresh();
   const { addToast } = useToast();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editItem, setEditItem] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
 
   const { data: result, loading, reload } = useApi(
@@ -29,35 +26,12 @@ export default function CategoryList() {
     [version, search, page]
   );
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm();
-
   const openCreate = () => {
-    setEditItem(null);
-    reset({ name: '', description: '' });
-    setModalOpen(true);
+    navigate('/categories/create');
   };
 
   const openEdit = (cat) => {
-    setEditItem(cat);
-    reset({ name: cat.name, description: cat.description });
-    setModalOpen(true);
-  };
-
-  const onSubmit = async (data) => {
-    try {
-      if (editItem) {
-        await categoriesApi.update(editItem.id, data);
-        addToast({ title: 'Category updated', type: 'success' });
-      } else {
-        await categoriesApi.create(data);
-        addToast({ title: 'Category created', type: 'success' });
-      }
-      setModalOpen(false);
-      refresh();
-      reload();
-    } catch (err) {
-      addToast({ title: err.message, type: 'error' });
-    }
+    navigate(`/categories/${cat.id}`);
   };
 
   const handleDelete = async () => {
@@ -108,18 +82,6 @@ export default function CategoryList() {
           </>
         )}
       </Card>
-
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editItem ? 'Edit Category' : 'Add Category'}>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <Input id="name" label="Name" error={errors.name?.message}
-            {...register('name', { required: 'Name is required' })} />
-          <Input id="description" label="Description" {...register('description')} />
-          <div className="flex gap-2 justify-end">
-            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save'}</Button>
-          </div>
-        </form>
-      </Modal>
 
       <ConfirmDialog
         isOpen={!!deleteId}
