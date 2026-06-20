@@ -12,7 +12,7 @@ export function usePerformanceMonitoring(componentName) {
     // Record component render time
     renderTimeRef.current = Date.now() - startTimeRef.current;
 
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log(`[Performance] ${componentName} rendered in ${renderTimeRef.current}ms`);
     }
   }, [componentName]);
@@ -29,7 +29,7 @@ export function measureApiTime(name, fn) {
   const start = performance.now();
   return Promise.resolve(fn()).then(result => {
     const duration = performance.now() - start;
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log(`[API] ${name} took ${duration.toFixed(2)}ms`);
     }
     return result;
@@ -47,7 +47,7 @@ export function useCoreWebVitals() {
         const lcpObserver = new PerformanceObserver((list) => {
           const entries = list.getEntries();
           const lastEntry = entries[entries.length - 1];
-          if (process.env.NODE_ENV === 'development') {
+          if (import.meta.env.DEV) {
             console.log(`[Vitals] LCP: ${lastEntry.renderTime || lastEntry.loadTime}ms`);
           }
         });
@@ -65,7 +65,7 @@ export function useCoreWebVitals() {
       try {
         const fidObserver = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
-            if (process.env.NODE_ENV === 'development') {
+            if (import.meta.env.DEV) {
               console.log(`[Vitals] FID: ${entry.processingDuration}ms`);
             }
           }
@@ -85,7 +85,7 @@ export function useCoreWebVitals() {
         const clsObserver = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
             if (!entry.hadRecentInput) {
-              if (process.env.NODE_ENV === 'development') {
+              if (import.meta.env.DEV) {
                 console.log(`[Vitals] CLS: ${entry.value}`);
               }
             }
@@ -105,7 +105,7 @@ export function useCoreWebVitals() {
  */
 export function useMemoryMonitoring() {
   useEffect(() => {
-    if ('memory' in performance && process.env.NODE_ENV === 'development') {
+    if ('memory' in performance && import.meta.env.DEV) {
       const interval = setInterval(() => {
         const memory = performance.memory;
         const usedMemory = (memory.usedJSHeapSize / 1048576).toFixed(2);
@@ -187,7 +187,7 @@ export function useNetworkInformation() {
 
     const handleChange = () => {
       const type = connection.effectiveType;
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         console.log(`[Network] Connection type: ${type}, Downlink: ${connection.downlink}Mbps`);
       }
     };

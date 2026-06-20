@@ -47,13 +47,13 @@ export const validationRules = {
   },
   phone: {
     pattern: {
-      value: /^[0-9\s\-\+\(\)]+$/,
+      value: /^[0-9\s\-+()]+$/,
       message: 'Invalid phone number',
     },
   },
   url: {
     pattern: {
-      value: /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/,
+      value: /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})(\/[\w .-]*)*\/?$/,
       message: 'Invalid URL',
     },
   },

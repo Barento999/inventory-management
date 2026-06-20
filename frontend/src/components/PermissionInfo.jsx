@@ -192,7 +192,7 @@ export const PermissionWidget = () => {
  * Only shows in development mode
  */
 export const PermissionDebugger = () => {
-  if (process.env.NODE_ENV !== 'development') return null;
+  if (!import.meta.env.DEV) return null;
 
   return (
     <div className="fixed top-4 right-4 z-50">
