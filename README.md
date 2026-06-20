@@ -1,304 +1,429 @@
 # Inventory Management SaaS
 
-A comprehensive inventory management system built with modern web technologies, designed for businesses to track products, manage stock, handle sales and purchases, and generate reports.
+Complete role-based inventory management system with advanced RBAC, audit logging, and production-ready security.
 
-## 🚀 Tech Stack
+## Features
 
-### Backend
-- **Framework**: FastAPI
-- **Database**: PostgreSQL
-- **ORM**: SQLAlchemy
-- **Authentication**: JWT tokens
-- **Python Version**: 3.14+
+✅ **Role-Based Access Control (RBAC)**
+- 5 role levels (Admin, Manager, Staff, User, Viewer)
+- 90+ granular permissions
+- Permission-based API endpoints
+- Audit trail logging
 
-### Frontend
-- **Framework**: React with Vite
-- **UI Components**: Custom components with TailwindCSS
-- **State Management**: React Context API
-- **API Client**: Custom fetch-based client
-- **Node Version**: 18+
+✅ **Security**
+- JWT token authentication
+- Rate limiting on auth endpoints
+- Input validation & sanitization
+- Security headers (CSP, X-Frame-Options, etc.)
+- Password hashing with Argon2
 
-## 📋 Features
+✅ **API**
+- RESTful API with 60+ endpoints
+- OpenAPI/Swagger documentation
+- Comprehensive error handling
+- Request/response logging
+- Rate limiting
 
-### Core Functionality
-- **Product Management**: Create, read, update, delete products with categories, SKUs, and stock tracking
-- **Inventory Control**: Real-time stock levels, low stock alerts, stock movements, and batch tracking
-- **Sales Management**: Complete sales workflow with customer management and invoice generation
-- **Purchase Management**: Supplier management, purchase orders, and receiving
-- **Warehouse Management**: Multiple warehouse support with location tracking
-- **Reporting**: Sales reports, inventory valuation, low stock alerts, and top products analysis
-- **User Management**: Role-based access control (Admin, Manager, Staff, Viewer)
-- **Audit Logging**: Track all system changes for compliance and security
+✅ **Frontend**
+- React + TypeScript
+- Permission-based UI visibility
+- Protected routes
+- Responsive design
+- Real-time updates
 
-### Advanced Features
-- **Serial Number Tracking**: Track individual items with unique serial numbers
-- **Batch Management**: Track product batches with expiration dates
-- **Returns Management**: Handle product returns with refund processing
-- **Invoice Generation**: Create and manage invoices with payment tracking
-- **Notifications**: System notifications for important events
-- **Global Search**: Search across products, customers, suppliers, sales, and purchases
-- **Settings Management**: Configure company settings, currency, tax rates, and thresholds
+✅ **Database**
+- PostgreSQL with SQLAlchemy ORM
+- Automated migrations
+- Relationship management
+- Audit log tracking
 
-## 🛠️ Installation
+✅ **DevOps**
+- Docker containerization
+- Docker Compose setup
+- GitHub Actions CI/CD
+- Health checks & monitoring
+
+## Quick Start
 
 ### Prerequisites
-- Docker and Docker Compose
-- Python 3.14+
-- Node.js 18+
-- PostgreSQL (or use Docker)
+- Python 3.13+
+- Node.js 20+
+- Docker & Docker Compose
+- PostgreSQL 12+ (or use Docker)
 
-### Quick Start with Docker
+### Development
 
-1. **Clone the repository**
+1. **Clone & Setup**
 ```bash
-git clone https://github.com/Barento999/inventory-management.git
-cd inventory-management-SaaS
+git clone https://github.com/yourusername/inventory-management.git
+cd inventory-management
 ```
 
-2. **Start PostgreSQL with Docker**
-```bash
-docker-compose up -d postgres
-```
-
-3. **Backend Setup**
+2. **Backend Setup**
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env
-# Edit .env with your database credentials
-python seed.py  # Seed database with sample data
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+python seed.py
+uvicorn app.main:app --reload
 ```
 
-4. **Frontend Setup**
+3. **Frontend Setup**
 ```bash
 cd frontend
 npm install
 cp .env.example .env
-# Edit .env with your API URL (default: http://localhost:8000/api)
 npm run dev
 ```
 
-5. **Access the Application**
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:8000
-- API Documentation: http://localhost:8000/docs
-
-### Manual Setup (Without Docker)
-
-1. **Install PostgreSQL**
-```bash
-# Ubuntu/Debian
-sudo apt install postgresql postgresql-contrib
-
-# macOS
-brew install postgresql
-
-# Windows
-# Download from https://www.postgresql.org/download/windows/
-```
-
-2. **Create Database**
-```bash
-sudo -u postgres psql
-CREATE DATABASE inventory_management;
-CREATE USER inventory_user WITH PASSWORD 'your_password';
-GRANT ALL PRIVILEGES ON DATABASE inventory_management TO inventory_user;
-\q
-```
-
-3. **Configure Backend**
-```bash
-cd backend
-# Edit .env with your database credentials
-DATABASE_URL=postgresql://inventory_user:your_password@localhost/inventory_management
-```
-
-4. **Follow steps 3-5 from Quick Start above**
-
-## 📁 Project Structure
-
-```
-inventory-management-SaaS/
-├── backend/
-│   ├── app/
-│   │   ├── api/
-│   │   │   ├── endpoints/     # API route handlers
-│   │   │   └── __init__.py     # API router configuration
-│   │   ├── core/
-│   │   │   ├── database.py     # Database configuration
-│   │   │   └── config.py       # Application settings
-│   │   ├── models/             # SQLAlchemy models
-│   │   └── main.py             # FastAPI application
-│   ├── seed.py                 # Database seeding script
-│   ├── check_db.py             # Database verification
-│   ├── requirements.txt        # Python dependencies
-│   └── .env                   # Environment variables
-├── frontend/
-│   ├── src/
-│   │   ├── components/         # React components
-│   │   ├── context/            # React context providers
-│   │   ├── hooks/              # Custom React hooks
-│   │   ├── pages/              # Page components
-│   │   ├── services/           # API client and services
-│   │   ├── App.jsx             # Main App component
-│   │   └── main.jsx            # Application entry point
-│   ├── public/                 # Static assets
-│   ├── package.json            # Node dependencies
-│   └── .env                    # Environment variables
-├── docker-compose.yml          # Docker services
-└── README.md                   # This file
-```
-
-## 🔧 Configuration
-
-### Backend Environment Variables (.env)
-```env
-DATABASE_URL=postgresql://user:password@localhost/dbname
-SECRET_KEY=your-secret-key
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-```
-
-### Frontend Environment Variables (.env)
-```env
-VITE_API_URL=http://localhost:8000/api
-```
-
-## 📊 Database Schema
-
-### Main Tables
-- **users**: User accounts with role-based access
-- **categories**: Product categorization
-- **warehouses**: Storage locations
-- **products**: Product catalog with stock tracking
-- **suppliers**: Vendor management
-- **customers**: Customer management
-- **sales**: Sales transactions
-- **purchases**: Purchase orders
-- **quotes**: Price quotes
-- **stock_movements**: Inventory change history
-- **settings**: Application configuration
-- **notifications**: System notifications
-- **roles**: User roles and permissions
-- **audit_logs**: System activity logs
-- **serial_numbers**: Individual item tracking
-- **batches**: Product batch management
-- **returns**: Product returns
-- **invoices**: Invoice management
-
-## 🔐 Authentication
-
-The system uses JWT token-based authentication:
-
-1. **Login**: Users authenticate with email and password
-2. **Token Generation**: Server returns JWT token on successful login
-3. **Token Storage**: Frontend stores token in localStorage
-4. **Token Usage**: Frontend includes token in API request headers
-5. **Token Validation**: Backend validates token on protected routes
-
-### Default Users
-- **Admin**: admin@inventory.com (full access)
-- **Manager**: manager@inventory.com (manage inventory and sales)
-- **User**: user@inventory.com (limited access)
-
-## 🧪 Testing
-
-### Backend Testing
-```bash
-cd backend
-# Run with pytest (if tests are implemented)
-pytest
-
-# Manual API testing
-curl http://localhost:8000/api/products
-curl http://localhost:8000/api/categories
-```
-
-### Frontend Testing
-```bash
-cd frontend
-# Run tests (if implemented)
-npm test
-```
-
-## 📈 API Documentation
-
-Interactive API documentation is available at:
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-
-### Main API Endpoints
-- `/api/auth` - Authentication
-- `/api/products` - Product management
-- `/api/categories` - Category management
-- `/api/warehouses` - Warehouse management
-- `/api/customers` - Customer management
-- `/api/suppliers` - Supplier management
-- `/api/sales` - Sales management
-- `/api/purchases` - Purchase management
-- `/api/quotes` - Quote management
-- `/api/inventory` - Inventory management
-- `/api/dashboard` - Dashboard statistics
-- `/api/settings` - Application settings
-- `/api/notifications` - System notifications
-- `/api/roles` - Role management
-- `/api/audit-logs` - Audit logs
-- `/api/serial-numbers` - Serial number tracking
-- `/api/batches` - Batch management
-- `/api/returns` - Returns management
-- `/api/invoices` - Invoice management
-
-## 🚀 Deployment
-
-### Backend Deployment
-1. Set environment variables
-2. Install dependencies: `pip install -r requirements.txt`
-3. Run migrations (if using Alembic)
-4. Start with production server: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
-5. Use Gunicorn for production: `gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker`
-
-### Frontend Deployment
-1. Set environment variables
-2. Install dependencies: `npm install`
-3. Build for production: `npm run build`
-4. Serve with Nginx or any static file server
+4. **Access**
+- Frontend: http://localhost:3000
+- Backend: http://localhost:8000
+- API Docs: http://localhost:8000/docs
 
 ### Docker Deployment
+
 ```bash
+# Start all services
 docker-compose up -d
+
+# Initialize database
+docker-compose exec backend python seed.py
+
+# View logs
+docker-compose logs -f
 ```
 
-## 🤝 Contributing
+---
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+## Test Credentials
 
-## 📝 License
+After seeding database:
 
-This project is licensed under the MIT License.
+| Email | Password | Role |
+|-------|----------|------|
+| admin@inventory.com | Admin@123 | Admin |
+| manager@inventory.com | Manager@123 | Manager |
+| staff@inventory.com | Staff@123 | Staff |
+| user@inventory.com | User@123 | User |
+| viewer@inventory.com | Viewer@123 | Viewer |
 
-## 🆘 Support
+---
 
-For support and questions:
-- Open an issue on GitHub
-- Check the API documentation at `/docs`
-- Review the database schema in `DATABASE.md`
+## Architecture
 
-## 🎯 Roadmap
+```
+inventory-management/
+├── backend/                    # FastAPI application
+│   ├── app/
+│   │   ├── api/              # API endpoints (60+)
+│   │   ├── models/           # SQLAlchemy models
+│   │   ├── core/             # Authentication, RBAC, validation
+│   │   └── seeds/            # Database seeding
+│   ├── Dockerfile            # Backend container
+│   └── requirements.txt       # Python dependencies
+│
+├── frontend/                   # React application
+│   ├── src/
+│   │   ├── pages/            # Route pages
+│   │   ├── components/       # Reusable components
+│   │   ├── hooks/            # Custom hooks (permissions, etc.)
+│   │   ├── context/          # Auth context
+│   │   └── services/         # API client
+│   ├── Dockerfile            # Frontend container
+│   └── package.json          # Node dependencies
+│
+├── docker-compose.yml        # Multi-container setup
+├── .github/workflows/        # CI/CD pipeline
+└── docs/                     # Documentation
+```
 
-- [ ] Advanced reporting and analytics
-- [ ] Mobile app development
-- [ ] Barcode scanning integration
-- [ ] Multi-tenant support
-- [ ] Advanced permissions system
-- [ ] Email notifications
-- [ ] File attachments for products
-- [ ] API rate limiting
-- [ ] Caching layer with Redis
-- [ ] Automated backups
+---
+
+## API Endpoints
+
+### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login & get token
+- `GET /api/auth/me` - Get current user
+
+### Products (60+ endpoints total)
+- `GET /api/products` - List products
+- `POST /api/products` - Create product
+- `GET /api/products/{id}` - Get product
+- `PUT /api/products/{id}` - Update product
+- `DELETE /api/products/{id}` - Delete product
+
+### Other Resources
+- Customers, Suppliers, Sales, Purchases, Quotes
+- Invoices, Returns, Warehouses, Categories
+- Inventory, Audit Logs, Users, Roles
+- Dashboard & Reports
+
+**Full API docs**: See [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
+
+---
+
+## Permissions System
+
+### Role Hierarchy
+```
+Admin (all permissions)
+ ↓
+Manager (management + creation)
+ ↓
+Staff (view + limited creation)
+ ↓
+User (self-service)
+ ↓
+Viewer (read-only)
+```
+
+### Permission Examples
+- `products_view` - View products
+- `products_create` - Create products
+- `products_update` - Update products
+- `products_delete` - Delete products
+- `users_view` - View users
+- `audit_logs_view` - View audit logs
+- `reports_view` - View dashboard/reports
+
+---
+
+## Security Features
+
+✅ **Authentication**
+- JWT token-based
+- Token expiration (30 min default)
+- Secure password hashing
+
+✅ **Authorization**
+- Role-based access control
+- Permission validation on every endpoint
+- Audit logging for denials
+
+✅ **Rate Limiting**
+- 5/minute on auth endpoints
+- 30/minute on other endpoints
+- Per-IP tracking
+
+✅ **Input Validation**
+- Email format validation
+- Password strength requirements
+- String length validation
+- XSS prevention
+
+✅ **Security Headers**
+- X-Content-Type-Options
+- X-Frame-Options
+- Content-Security-Policy
+- Strict-Transport-Security
+
+---
+
+## Monitoring & Logging
+
+### Logs Location
+- Backend: stdout (JSON format)
+- Errors: `backend/error.log`
+- Audit trail: Database `audit_log` table
+
+### Audit Events
+- User login/logout
+- Permission denied attempts
+- Authentication failures
+- Resource CRUD operations
+- Admin actions
+
+### Endpoints
+- `GET /api/audit-logs` - View all logs
+- `GET /api/audit-logs/permission-denials` - View permission denials
+- `GET /api/audit-logs/auth-failures` - View auth failures
+
+---
+
+## Database Schema
+
+### Key Tables
+- `users` - User accounts with roles
+- `roles` - Role definitions
+- `products` - Inventory items
+- `customers` - Customer database
+- `sales` - Sales transactions
+- `purchases` - Purchase orders
+- `audit_log` - Action audit trail
+- 10+ other business tables
+
+**Relationships**:
+- Products → Categories, Warehouses
+- Sales → Customers, Users
+- Purchases → Suppliers, Users
+- AuditLog → Users
+
+---
+
+## Deployment
+
+### Production Checklist
+- [ ] Update SECRET_KEY
+- [ ] Set ENVIRONMENT=production
+- [ ] Configure database backup
+- [ ] Set up monitoring/alerting
+- [ ] Configure HTTPS/SSL
+- [ ] Review security headers
+- [ ] Set up rate limiting
+- [ ] Configure CORS properly
+- [ ] Test all endpoints
+- [ ] Document deployment steps
+
+**Deployment guide**: See [DEPLOYMENT.md](DEPLOYMENT.md)
+
+---
+
+## Performance
+
+### Optimizations
+- Database indexes on frequently queried fields
+- Pagination on all list endpoints
+- Connection pooling for database
+- Rate limiting for abuse prevention
+- JSON logging for efficient monitoring
+
+### Scalability
+- Stateless API design
+- Horizontal scaling ready
+- Load balancer compatible
+- Container orchestration ready (Kubernetes)
+
+---
+
+## Testing
+
+### Manual Testing
+1. Start backend & frontend
+2. Register new user
+3. Login with credentials
+4. Access different resource pages based on role
+5. Verify permission denials
+6. Check audit logs
+
+### API Testing
+```bash
+# Test registration
+curl -X POST http://localhost:8000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"Pass123","name":"Test"}'
+
+# Test login
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"Pass123"}'
+
+# Test protected endpoint
+curl -X GET http://localhost:8000/api/products \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+## Documentation
+
+- [API Documentation](API_DOCUMENTATION.md) - Complete API reference
+- [Deployment Guide](DEPLOYMENT.md) - Production deployment
+- [Frontend Integration](FRONTEND_INTEGRATION_TEST.md) - Testing guide
+- [RBAC Implementation](RBAC_IMPLEMENTATION_COMPLETE.md) - Permission system
+- [Quick Start](QUICK_START_GUIDE.md) - Getting started
+
+---
+
+## Technology Stack
+
+### Backend
+- **Framework**: FastAPI
+- **Database**: PostgreSQL + SQLAlchemy
+- **Auth**: JWT + Argon2
+- **Validation**: Pydantic
+- **Rate Limiting**: SlowAPI
+- **Logging**: Python logging + JSON
+
+### Frontend
+- **Framework**: React 18+
+- **Language**: TypeScript
+- **State**: Context API
+- **HTTP**: Axios
+- **UI**: Tailwind CSS
+- **Routing**: React Router
+
+### DevOps
+- **Containerization**: Docker
+- **Orchestration**: Docker Compose
+- **CI/CD**: GitHub Actions
+- **Database**: PostgreSQL
+- **Monitoring**: Built-in logging
+
+---
+
+## Contributing
+
+1. Fork repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
+
+### Code Style
+- Python: PEP 8 (Black formatter)
+- JavaScript: ESLint + Prettier
+- Follow existing patterns
+
+---
+
+## License
+
+MIT License - see LICENSE file
+
+---
+
+## Support
+
+- **Issues**: GitHub Issues
+- **Docs**: See documentation folder
+- **Email**: support@example.com
+- **API Docs**: http://localhost:8000/docs
+
+---
+
+## Roadmap
+
+- [ ] Two-factor authentication
+- [ ] Advanced reporting
+- [ ] Mobile app
+- [ ] GraphQL API
+- [ ] Real-time notifications
+- [ ] Advanced analytics
+- [ ] Multi-currency support
+- [ ] Integration marketplace
+
+---
+
+## Stats
+
+- **API Endpoints**: 60+
+- **Permissions**: 90+
+- **Roles**: 5
+- **Tables**: 15+
+- **Code Files**: 100+
+- **Test Coverage**: TBD
+- **Documentation**: Complete
+
+---
+
+**Version**: 1.0.0  
+**Last Updated**: June 2026  
+**Status**: Production Ready ✅
+
+---
+
+Made with ❤️ for inventory management professionals
