@@ -76,7 +76,7 @@ export const validationRules = {
   },
   sku: {
     pattern: {
-      value: /^[A-Z0-9\-]+$/,
+      value: /^[A-Z0-9-]+$/,
       message: 'SKU must contain only uppercase letters, numbers, and hyphens',
     },
   },
