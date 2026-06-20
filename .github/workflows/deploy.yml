@@ -38,11 +38,9 @@ jobs:
           pip install -r requirements.txt
       
       - name: Verify backend imports
-        env:
-          DATABASE_URL: postgresql://postgres:password@localhost:5432/inventory_db
         run: |
           cd backend
-          python -c "from app.main import app; print('Backend imports OK')"
+          python -c "import sys; print(f'Python {sys.version}'); from app.main import app; print('✓ Backend imports OK')"
       
       - name: Set up Node
         uses: actions/setup-node@v3
