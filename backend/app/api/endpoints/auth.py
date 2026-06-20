@@ -1,9 +1,11 @@
-from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi import APIRouter, HTTPException, Depends, Header, Request
 from pydantic import BaseModel
 from typing import Optional
 from sqlalchemy.orm import Session
 from app.core.security import hash_password, verify_password, create_access_token, verify_token
 from app.core.database import get_db
+from app.core.security_middleware import limiter
+from app.core.validation import validate_email, validate_password, sanitize_input
 from app.models import User
 
 router = APIRouter()
@@ -46,10 +48,14 @@ class TokenResponse(BaseModel):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(credentials: UserLogin, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+async def login(request: Request, credentials: UserLogin, db: Session = Depends(get_db)):
     """Login endpoint - authenticate user with email and password"""
+    # Validate input
+    email = validate_email(credentials.email)
+    
     # Find user by email
-    user = db.query(User).filter(User.email == credentials.email).first()
+    user = db.query(User).filter(User.email == email).first()
     
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
@@ -76,19 +82,25 @@ async def login(credentials: UserLogin, db: Session = Depends(get_db)):
 
 
 @router.post("/register", response_model=TokenResponse)
-async def register(data: UserRegister, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+async def register(request: Request, data: UserRegister, db: Session = Depends(get_db)):
     """Register endpoint - create new user account"""
     
+    # Validate input
+    email = validate_email(data.email)
+    password = validate_password(data.password)
+    name = sanitize_input({"name": data.name})["name"]
+    
     # Check if email already exists
-    existing_user = db.query(User).filter(User.email == data.email).first()
+    existing_user = db.query(User).filter(User.email == email).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
     # Create new user
     new_user = User(
-        email=data.email,
-        password_hash=hash_password(data.password),
-        name=data.name,
+        email=email,
+        password_hash=hash_password(password),
+        name=name,
         role="user"
     )
     

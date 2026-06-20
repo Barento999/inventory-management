@@ -2,14 +2,19 @@ from fastapi import APIRouter, Depends, Header
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.rbac import require_permission, check_permission
+from app.core.security_middleware import limiter
+from app.core.validation import validate_email, validate_password, sanitize_input
 from app.models import Product, Sale, Purchase, Customer, Supplier, User
+from pydantic import BaseModel
 
 router = APIRouter()
 
 
 @router.get("/summary")
+@limiter.limit("30/minute")
 @require_permission("reports_view")
 async def get_dashboard_summary(
+    request,
     current_user: User = Depends(check_permission("reports_view")),
     db: Session = Depends(get_db)
 ):
