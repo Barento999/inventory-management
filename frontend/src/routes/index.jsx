@@ -24,6 +24,7 @@ import Settings from '../pages/settings/Settings';
 import WarehouseList from '../pages/warehouses/WarehouseList';
 import WarehouseDetails from '../pages/warehouses/WarehouseDetails';
 import SerialNumberList from '../pages/serial-numbers/SerialNumberList';
+import SerialNumberDetails from '../pages/serial-numbers/SerialNumberDetails';
 import BatchList from '../pages/batches/BatchList';
 import BatchDetails from '../pages/batches/BatchDetails';
 import QuoteList from '../pages/quotes/QuoteList';
@@ -99,6 +100,8 @@ export default function AppRoutes() {
         <Route path="warehouses/create" element={<ProtectedRoute permission="warehouses_create"><WarehouseDetails /></ProtectedRoute>} />
         <Route path="warehouses/:id" element={<ProtectedRoute permission="warehouses_view"><WarehouseDetails /></ProtectedRoute>} />
         <Route path="serial-numbers" element={<ProtectedRoute permission="serial_numbers_view"><SerialNumberList /></ProtectedRoute>} />
+        <Route path="serial-numbers/create" element={<ProtectedRoute permission="serial_numbers_create"><SerialNumberDetails /></ProtectedRoute>} />
+        <Route path="serial-numbers/:id" element={<ProtectedRoute permission="serial_numbers_view"><SerialNumberDetails /></ProtectedRoute>} />
         <Route path="batches" element={<ProtectedRoute permission="batches_view"><BatchList /></ProtectedRoute>} />
         <Route path="batches/create" element={<ProtectedRoute permission="batches_create"><BatchDetails /></ProtectedRoute>} />
         <Route path="batches/:id" element={<ProtectedRoute permission="batches_view"><BatchDetails /></ProtectedRoute>} />
