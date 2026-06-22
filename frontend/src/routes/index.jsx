@@ -9,6 +9,7 @@ import BulkAndFileIntegration from '../pages/integration/BulkAndFileIntegration'
 import RealTimeAnalytics from '../pages/analytics/RealTimeAnalytics';
 import APIDocumentation from '../pages/docs/APIDocumentation';
 import NotificationSettings from '../pages/settings/NotificationSettings';
+import PerformanceDashboard from '../pages/developer/PerformanceDashboard';
 import Register from '../pages/auth/Register';
 import ForgotPassword from '../pages/auth/ForgotPassword';
 import ResetPassword from '../pages/auth/ResetPassword';
@@ -143,6 +144,7 @@ export default function AppRoutes() {
         <Route path="analytics" element={<ProtectedRoute permission="reports_view"><RealTimeAnalytics /></ProtectedRoute>} />
         <Route path="docs" element={<ProtectedRoute permission="reports_view"><APIDocumentation /></ProtectedRoute>} />
         <Route path="settings/notifications" element={<ProtectedRoute permission="settings_view"><NotificationSettings /></ProtectedRoute>} />
+        <Route path="performance" element={<ProtectedRoute permission="settings_view"><PerformanceDashboard /></ProtectedRoute>} />
         <Route path="reports" element={<ProtectedRoute permission="reports_view"><Reports /></ProtectedRoute>} />
         <Route path="reports/advanced" element={<ProtectedRoute permission="reports_view"><AdvancedReports /></ProtectedRoute>} />
         <Route path="reports/custom" element={<ProtectedRoute permission="reports_view"><CustomReportBuilder /></ProtectedRoute>} />
