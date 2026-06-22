@@ -1,191 +1,190 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import Card from '../../components/ui/Card';
-import Table from '../../components/ui/Table';
-import Loader from '../../components/ui/Loader';
-import Badge from '../../components/ui/Badge';
-import Pagination from '../../components/ui/Pagination';
-import Input from '../../components/ui/Input';
-import Select from '../../components/ui/Select';
-import Button from '../../components/ui/Button';
-import Modal from '../../components/ui/Modal';
-import PageHeader, { FilterBar } from '../../components/shared/PageHeader';
-import { useApi } from '../../hooks/useApi';
-import { salesApi } from '../../services/api';
-import { useDataRefresh } from '../../context/DataRefreshContext';
+import { Package, Truck } from 'lucide-react';
+import apiClient from '../../services/apiClient';
 import { useToast } from '../../context/ToastContext';
-import { formatCurrency, formatDateTime } from '../../utils/format';
-import { ExternalLink } from 'lucide-react';
+import SearchFilter from '../../components/ui/SearchFilter';
 
 export default function ShippingList() {
-  const { version, refresh } = useDataRefresh();
   const { addToast } = useToast();
-  const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('');
+  const [shipments, setShipments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedSale, setSelectedSale] = useState(null);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
-  const { data: result, loading, reload } = useApi(
-    () => salesApi.list({ search, status, page, pageSize: 10 }),
-    [version, search, status, page]
-  );
+  useEffect(() => {
+    fetchShipments();
+  }, [page, search, statusFilter]);
 
-  const handleUpdateShipping = async (shippingData) => {
+  async function fetchShipments() {
     try {
-      await salesApi.updateShipping(selectedSale.id, shippingData);
-      addToast({ title: 'Shipping info updated', type: 'success' });
-      refresh();
-      reload();
-      setIsModalOpen(false);
-      setSelectedSale(null);
-    } catch (err) {
-      addToast({ title: err.message, type: 'error' });
+      setLoading(true);
+      const params = {
+        skip: (page - 1) * pageSize,
+        limit: pageSize,
+      };
+      if (statusFilter) params.status = statusFilter;
+      
+      const response = await apiClient.get('/shipments', { params });
+      setShipments(response.data || []);
+      setTotal(response.total || shipments.length);
+    } catch (error) {
+      addToast({
+        title: 'Error',
+        description: 'Failed to load shipments',
+        type: 'error',
+      });
+    } finally {
+      setLoading(false);
     }
+  }
+
+  const getStatusColor = (status) => {
+    const colors = {
+      pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900',
+      processing: 'bg-blue-100 text-blue-800 dark:bg-blue-900',
+      shipped: 'bg-purple-100 text-purple-800 dark:bg-purple-900',
+      in_transit: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900',
+      delivered: 'bg-green-100 text-green-800 dark:bg-green-900',
+      returned: 'bg-orange-100 text-orange-800 dark:bg-orange-900',
+      cancelled: 'bg-red-100 text-red-800 dark:bg-red-900',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
-  const columns = [
-    { key: 'id', title: 'Sale #', render: (row) => `#${row.id}` },
-    { key: 'customerName', title: 'Customer' },
-    { key: 'total', title: 'Total', render: (row) => formatCurrency(row.total) },
-    { key: 'shipping.carrier', title: 'Carrier', render: (row) => row.shipping?.carrier || '-' },
-    { key: 'shipping.trackingNumber', title: 'Tracking #', render: (row) => (
-      row.shipping?.trackingNumber ? (
-        <a
-          href={`https://www.google.com/search?q=${row.shipping.carrier}+tracking+${row.shipping.trackingNumber}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary hover:underline flex items-center gap-1"
-        >
-          {row.shipping.trackingNumber} <ExternalLink className="w-3 h-3" />
-        </a>
-      ) : '-'
-    ) },
-    { key: 'shipping.estimatedDelivery', title: 'Est. Delivery', render: (row) => row.shipping?.estimatedDelivery || '-' },
-    { key: 'status', title: 'Status', render: (row) => (
-      <Badge variant={row.status === 'delivered' ? 'success' : row.status === 'shipped' ? 'primary' : 'default'}>
-        {row.status}
-      </Badge>
-    ) },
-    { key: 'actions', title: 'Actions', render: (row) => (
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => { setSelectedSale(row); setIsModalOpen(true); }}
-          className="text-primary hover:underline text-sm"
-        >
-          Update Shipping
-        </button>
-        <Link to={`/sales/${row.id}`} className="text-primary hover:underline text-sm">View</Link>
-      </div>
-    ) },
+  const filters = [
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select',
+      options: [
+        { value: 'pending', label: 'Pending' },
+        { value: 'processing', label: 'Processing' },
+        { value: 'shipped', label: 'Shipped' },
+        { value: 'in_transit', label: 'In Transit' },
+        { value: 'delivered', label: 'Delivered' },
+        { value: 'returned', label: 'Returned' },
+        { value: 'cancelled', label: 'Cancelled' },
+      ],
+    },
   ];
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="Shipping"
-        subtitle="Track and manage shipments"
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <Truck className="w-8 h-8" />
+          Shipments & Logistics
+        </h1>
+        <Link
+          to="/shipments/create"
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+        >
+          + New Shipment
+        </Link>
+      </div>
+
+      <SearchFilter
+        searchPlaceholder="Search by tracking number, carrier..."
+        onSearch={(term) => {
+          setSearch(term);
+          setPage(1);
+        }}
+        onFilter={(filters) => {
+          if (filters.status) setStatusFilter(filters.status);
+        }}
+        filters={filters}
       />
 
-      <FilterBar>
-        <Input
-          id="search"
-          placeholder="Search by customer or tracking #..."
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          className="flex-1"
-        />
-        <Select
-          id="status"
-          value={status}
-          onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-          options={[
-            { value: '', label: 'All statuses' },
-            { value: 'draft', label: 'Draft' },
-            { value: 'confirmed', label: 'Confirmed' },
-            { value: 'shipped', label: 'Shipped' },
-            { value: 'delivered', label: 'Delivered' },
-          ]}
-        />
-      </FilterBar>
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      ) : shipments.length === 0 ? (
+        <div className="text-center py-12 text-gray-500">
+          <Package className="w-16 h-16 mx-auto mb-4 opacity-50" />
+          <p>No shipments found</p>
+        </div>
+      ) : (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-100 dark:bg-gray-700">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium">Tracking</th>
+                  <th className="px-4 py-3 text-left font-medium">Carrier</th>
+                  <th className="px-4 py-3 text-left font-medium">From</th>
+                  <th className="px-4 py-3 text-left font-medium">To</th>
+                  <th className="px-4 py-3 text-right font-medium">Weight</th>
+                  <th className="px-4 py-3 text-center font-medium">Status</th>
+                  <th className="px-4 py-3 text-center font-medium">Expected</th>
+                  <th className="px-4 py-3 text-center font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {shipments.map((shipment) => (
+                  <tr key={shipment.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-4 py-3 font-mono text-sm font-medium">
+                      {shipment.tracking_number || 'N/A'}
+                    </td>
+                    <td className="px-4 py-3">{shipment.carrier}</td>
+                    <td className="px-4 py-3 text-sm max-w-xs truncate">
+                      {shipment.ship_from_address}
+                    </td>
+                    <td className="px-4 py-3 text-sm max-w-xs truncate">
+                      {shipment.ship_to_address}
+                    </td>
+                    <td className="px-4 py-3 text-right">{shipment.weight_kg} kg</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(shipment.status)}`}>
+                        {shipment.status?.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center text-sm">
+                      {shipment.expected_delivery
+                        ? new Date(shipment.expected_delivery).toLocaleDateString()
+                        : '-'}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <Link
+                        to={`/shipments/${shipment.id}`}
+                        className="text-blue-600 hover:underline text-sm"
+                      >
+                        View
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
-      <Card>
-        {loading ? <Loader /> : (
-          <>
-            <Table columns={columns} data={(result?.data || []).filter(s => s.shipping)} />
-            {result?.pagination?.totalPages > 1 && (
-              <Pagination
-                current={result.pagination.page}
-                total={result.pagination.totalPages}
-                onPageChange={setPage}
-              />
-            )}
-          </>
-        )}
-      </Card>
-
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Update Shipping Info">
-        {selectedSale && (
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            handleUpdateShipping({
-              carrier: formData.get('carrier') || selectedSale.shipping?.carrier,
-              trackingNumber: formData.get('trackingNumber') || selectedSale.shipping?.trackingNumber,
-              shippingAddress: formData.get('shippingAddress') || selectedSale.shipping?.shippingAddress,
-              shippingCost: Number(formData.get('shippingCost') || selectedSale.shipping?.shippingCost),
-              estimatedDelivery: formData.get('estimatedDelivery') || selectedSale.shipping?.estimatedDelivery,
-              actualDelivery: formData.get('actualDelivery') || selectedSale.shipping?.actualDelivery,
-            });
-          }} className="space-y-4">
-            <Input
-              id="carrier"
-              label="Carrier"
-              defaultValue={selectedSale.shipping?.carrier}
-              name="carrier"
-            />
-            <Input
-              id="trackingNumber"
-              label="Tracking Number"
-              defaultValue={selectedSale.shipping?.trackingNumber}
-              name="trackingNumber"
-            />
-            <Input
-              id="shippingAddress"
-              label="Shipping Address"
-              defaultValue={selectedSale.shipping?.shippingAddress}
-              name="shippingAddress"
-            />
-            <Input
-              id="shippingCost"
-              label="Shipping Cost"
-              type="number"
-              step="0.01"
-              defaultValue={selectedSale.shipping?.shippingCost}
-              name="shippingCost"
-            />
-            <Input
-              id="estimatedDelivery"
-              label="Estimated Delivery"
-              type="date"
-              defaultValue={selectedSale.shipping?.estimatedDelivery}
-              name="estimatedDelivery"
-            />
-            <Input
-              id="actualDelivery"
-              label="Actual Delivery"
-              type="date"
-              defaultValue={selectedSale.shipping?.actualDelivery}
-              name="actualDelivery"
-            />
-            <div className="flex gap-2">
-              <Button type="submit">Update Shipping</Button>
-              <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            </div>
-          </form>
-        )}
-      </Modal>
+      <div className="flex justify-between items-center">
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          Showing page {page} ({total} total)
+        </div>
+        <div className="space-x-2">
+          <button
+            onClick={() => setPage(Math.max(1, page - 1))}
+            disabled={page === 1}
+            className="px-4 py-2 border rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <button
+            onClick={() => setPage(page + 1)}
+            disabled={page >= Math.ceil(total / pageSize)}
+            className="px-4 py-2 border rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

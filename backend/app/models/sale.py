@@ -17,3 +17,4 @@ class Sale(Base):
     # Relationships
     customer = relationship("Customer", foreign_keys=[customer_id])
     user = relationship("User", foreign_keys=[user_id])
+    shipments = relationship("Shipment", back_populates="sale", cascade="all, delete-orphan")

@@ -41,8 +41,8 @@ import UserList from '../pages/users/UserList';
 import UserDetails from '../pages/users/UserDetails';
 import AuditLogList from '../pages/audit-logs/AuditLogList';
 import ShippingList from '../pages/shipping/ShippingList';
+import ShippingDetail from '../pages/shipping/ShippingDetail';
 import VendorPortal from '../pages/vendors/VendorPortal';
-import OrderCalendar from '../pages/calendar/OrderCalendar';
 import OrderKanban from '../pages/kanban/OrderKanban';
 import { useAuth } from '../context/AuthContext';
 
@@ -130,6 +130,8 @@ export default function AppRoutes() {
         <Route path="sales/:id" element={<ProtectedRoute permission="sales_view"><SaleDetails /></ProtectedRoute>} />
         <Route path="calendar" element={<ProtectedRoute permission="sales_view"><OrderCalendar /></ProtectedRoute>} />
         <Route path="kanban" element={<ProtectedRoute permission="sales_view"><OrderKanban /></ProtectedRoute>} />
+        <Route path="shipping" element={<ProtectedRoute permission="sales_view"><ShippingList /></ProtectedRoute>} />
+        <Route path="shipping/:id" element={<ProtectedRoute permission="sales_view"><ShippingDetail /></ProtectedRoute>} />
         <Route path="bulk" element={<ProtectedRoute permission="products_view"><BulkOperationsDemo /></ProtectedRoute>} />
         <Route path="reports" element={<ProtectedRoute permission="reports_view"><Reports /></ProtectedRoute>} />
         <Route path="reports/advanced" element={<ProtectedRoute permission="reports_view"><AdvancedReports /></ProtectedRoute>} />
