@@ -24,6 +24,7 @@ export default function BulkOperationsDemo() {
     clearSelection,
     bulkUpdate,
     bulkDelete,
+    bulkExport,
   } = useBulkOperations();
 
   const {
@@ -73,33 +74,58 @@ export default function BulkOperationsDemo() {
   }
 
   const handleBulkUpdate = async () => {
-    addToast({
-      title: 'Demo',
-      description: 'Bulk update would make API calls to update all selected items',
-      type: 'info',
-    });
+    // Create update payload with field changes
+    const updates = selectedIds.map(id => ({
+      id,
+      updates: { status: 'Active' } // Example: update status to Active
+    }));
+    
+    const results = await bulkUpdate('products', updates);
+    if (results) {
+      addToast({
+        title: 'Bulk Update Complete',
+        description: `${results.updated_count} updated, ${results.errors.length} errors`,
+        type: results.updated_count > 0 ? 'success' : 'error',
+      });
+      if (results.errors.length > 0) {
+        addToast({
+          title: 'Errors',
+          description: results.errors.join(', '),
+          type: 'error',
+        });
+      }
+      await fetchItems();
+    }
   };
 
   const handleBulkDelete = async () => {
-    const results = await bulkDelete('/products');
+    const results = await bulkDelete('products');
     if (results) {
-      const successful = results.filter(r => r.success).length;
-      const failed = results.filter(r => !r.success).length;
       addToast({
         title: 'Bulk Delete Complete',
-        description: `${successful} deleted, ${failed} failed`,
-        type: successful > 0 ? 'success' : 'error',
+        description: `${results.deleted_count} deleted, ${results.errors.length} errors`,
+        type: results.deleted_count > 0 ? 'success' : 'error',
       });
+      if (results.errors.length > 0) {
+        addToast({
+          title: 'Errors',
+          description: results.errors.join(', '),
+          type: 'error',
+        });
+      }
       await fetchItems();
     }
   };
 
   const handleBulkExport = async () => {
-    addToast({
-      title: 'Demo',
-      description: 'Bulk export functionality ready to implement',
-      type: 'info',
-    });
+    const results = await bulkExport('products', 'csv');
+    if (results) {
+      addToast({
+        title: 'Export Complete',
+        description: `Exported ${results.count} items`,
+        type: 'success',
+      });
+    }
   };
 
   if (loading) {

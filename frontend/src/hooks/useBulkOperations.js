@@ -36,12 +36,12 @@ export const useBulkOperations = () => {
 
   /**
    * Perform bulk update on selected items
-   * @param {string} endpoint - API endpoint for bulk operation
-   * @param {object} payload - Data to send in request
+   * @param {string} entityType - Type of entity (products, customers, etc.)
+   * @param {array} updates - Array of {id, updates} objects
    * @param {function} onProgress - Callback with progress updates
    */
   const bulkUpdate = useCallback(
-    async (endpoint, payload = {}, onProgress = null) => {
+    async (entityType, updates, onProgress = null) => {
       if (selectedIds.size === 0) {
         setBulkError('No items selected');
         return false;
@@ -52,31 +52,16 @@ export const useBulkOperations = () => {
         setBulkError(null);
         setBulkProgress({ completed: 0, total: selectedIds.size });
 
-        const ids = Array.from(selectedIds);
-        const results = [];
+        const response = await apiClient.post(
+          '/bulk/update?entity_type=' + entityType,
+          updates || Array.from(selectedIds).map((id) => ({ id, updates: {} }))
+        );
 
-        for (let i = 0; i < ids.length; i++) {
-          try {
-            const response = await apiClient.put(
-              `${endpoint}/${ids[i]}`,
-              payload
-            );
-            results.push({ id: ids[i], success: true, data: response.data });
-            setBulkProgress({ completed: i + 1, total: ids.length });
-            onProgress?.({ completed: i + 1, total: ids.length });
-          } catch (error) {
-            results.push({
-              id: ids[i],
-              success: false,
-              error: error.response?.data?.detail || error.message,
-            });
-            setBulkProgress({ completed: i + 1, total: ids.length });
-            onProgress?.({ completed: i + 1, total: ids.length });
-          }
-        }
-
+        setBulkProgress({ completed: selectedIds.size, total: selectedIds.size });
+        onProgress?.({ completed: selectedIds.size, total: selectedIds.size });
+        
         setSelectedIds(new Set());
-        return results;
+        return response.data;
       } catch (error) {
         const message = error.response?.data?.detail || error.message || 'Bulk operation failed';
         setBulkError(message);
@@ -92,7 +77,7 @@ export const useBulkOperations = () => {
    * Perform bulk delete on selected items
    */
   const bulkDelete = useCallback(
-    async (endpoint, onProgress = null) => {
+    async (entityType, onProgress = null) => {
       if (selectedIds.size === 0) {
         setBulkError('No items selected');
         return false;
@@ -107,28 +92,16 @@ export const useBulkOperations = () => {
         setBulkError(null);
         setBulkProgress({ completed: 0, total: selectedIds.size });
 
-        const ids = Array.from(selectedIds);
-        const results = [];
+        const response = await apiClient.post('/bulk/delete', {
+          ids: Array.from(selectedIds),
+          entity_type: entityType,
+        });
 
-        for (let i = 0; i < ids.length; i++) {
-          try {
-            await apiClient.delete(`${endpoint}/${ids[i]}`);
-            results.push({ id: ids[i], success: true });
-            setBulkProgress({ completed: i + 1, total: ids.length });
-            onProgress?.({ completed: i + 1, total: ids.length });
-          } catch (error) {
-            results.push({
-              id: ids[i],
-              success: false,
-              error: error.response?.data?.detail || error.message,
-            });
-            setBulkProgress({ completed: i + 1, total: ids.length });
-            onProgress?.({ completed: i + 1, total: ids.length });
-          }
-        }
-
+        setBulkProgress({ completed: selectedIds.size, total: selectedIds.size });
+        onProgress?.({ completed: selectedIds.size, total: selectedIds.size });
+        
         setSelectedIds(new Set());
-        return results;
+        return response.data;
       } catch (error) {
         const message = error.response?.data?.detail || error.message || 'Bulk delete failed';
         setBulkError(message);
@@ -144,7 +117,7 @@ export const useBulkOperations = () => {
    * Perform bulk export
    */
   const bulkExport = useCallback(
-    async (endpoint, format = 'json') => {
+    async (entityType, format = 'json') => {
       if (selectedIds.size === 0) {
         setBulkError('No items selected');
         return false;
@@ -154,9 +127,9 @@ export const useBulkOperations = () => {
         setBulkLoading(true);
         setBulkError(null);
 
-        const ids = Array.from(selectedIds);
-        const response = await apiClient.post(`${endpoint}/bulk-export`, {
-          ids,
+        const response = await apiClient.post('/bulk/export', {
+          ids: Array.from(selectedIds),
+          entity_type: entityType,
           format,
         });
 
@@ -172,6 +145,20 @@ export const useBulkOperations = () => {
     [selectedIds]
   );
 
+  /**
+   * Get bulk operation stats
+   */
+  const getStats = useCallback(async (entityType = null) => {
+    try {
+      const params = entityType ? `?entity_type=${entityType}` : '';
+      const response = await apiClient.get(`/bulk/stats${params}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch bulk stats:', error);
+      return null;
+    }
+  }, []);
+
   return {
     selectedIds: Array.from(selectedIds),
     selectedCount: selectedIds.size,
@@ -184,5 +171,6 @@ export const useBulkOperations = () => {
     bulkUpdate,
     bulkDelete,
     bulkExport,
+    getStats,
   };
 };
