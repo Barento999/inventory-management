@@ -52,6 +52,7 @@ import ShippingDetail from '../pages/shipping/ShippingDetail';
 import EnhancedVendorPortal from '../pages/vendors/EnhancedVendorPortal';
 import OrderKanban from '../pages/kanban/OrderKanban';
 import OrderCalendar from '../pages/calendar/OrderCalendar';
+import AdvancedAnalytics from '../pages/analytics/AdvancedAnalytics';
 import { useAuth } from '../context/AuthContext';
 
 function RequireAuth({ children }) {
@@ -147,6 +148,7 @@ export default function AppRoutes() {
         <Route path="settings/notifications" element={<ProtectedRoute permission="settings_view"><NotificationSettings /></ProtectedRoute>} />
         <Route path="performance" element={<ProtectedRoute permission="settings_view"><PerformanceDashboard /></ProtectedRoute>} />
         <Route path="logistics" element={<ProtectedRoute permission="sales_view"><LogisticsHub /></ProtectedRoute>} />
+        <Route path="analytics/advanced" element={<ProtectedRoute permission="reports_view"><AdvancedAnalytics /></ProtectedRoute>} />
         <Route path="reports" element={<ProtectedRoute permission="reports_view"><Reports /></ProtectedRoute>} />
         <Route path="reports/advanced" element={<ProtectedRoute permission="reports_view"><AdvancedReports /></ProtectedRoute>} />
         <Route path="reports/custom" element={<ProtectedRoute permission="reports_view"><CustomReportBuilder /></ProtectedRoute>} />
