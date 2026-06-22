@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from app.api.endpoints import auth, seed, products, customers, suppliers, sales, purchases, quotes, categories, warehouses, users, dashboard, inventory
-from app.api.endpoints import settings, notifications, roles, audit_logs, serial_numbers, batches, returns, invoices, uploads, shipments, reports
+from app.api.endpoints import settings, notifications, roles, audit_logs, serial_numbers, batches, returns, invoices, uploads, shipments, reports, bulk_operations
 
 api_router = APIRouter()
 
@@ -28,3 +28,4 @@ api_router.include_router(invoices.router, prefix="/invoices", tags=["invoices"]
 api_router.include_router(uploads.router, prefix="/uploads", tags=["uploads"])
 api_router.include_router(shipments.router, prefix="/shipments", tags=["shipments"])
 api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
+api_router.include_router(bulk_operations.router, prefix="/bulk", tags=["bulk-operations"])
