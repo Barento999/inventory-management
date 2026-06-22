@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, Header
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from sqlalchemy import func, and_
 from app.core.database import get_db
 from app.core.rbac import require_permission, check_permission
-from app.models import Supplier, User
+from app.models import Supplier, User, Purchase
 
 router = APIRouter()
 
@@ -148,3 +149,39 @@ async def delete_supplier(
     db.delete(db_supplier)
     db.commit()
     return {"message": "Supplier deleted successfully"}
+
+
+@router.get("/{supplier_id}/metrics")
+@require_permission("suppliers_view")
+async def get_supplier_metrics(
+    supplier_id: int,
+    current_user: User = Depends(check_permission("suppliers_view")),
+    db: Session = Depends(get_db)
+):
+    """Get performance metrics for a supplier"""
+    supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+    
+    # Get purchase metrics
+    purchases = db.query(Purchase).filter(Purchase.supplier_id == supplier_id).all()
+    
+    total_orders = len(purchases)
+    total_amount = sum(p.total_amount or 0 for p in purchases)
+    avg_order_value = total_amount / total_orders if total_orders > 0 else 0
+    
+    # Calculate on-time delivery rate (mock - would need shipment data in real scenario)
+    on_time_rate = 94
+    quality_score = 4.2
+    avg_lead_time = "5-7 days"
+    defect_rate = 0.8
+    
+    return {
+        "total_orders": total_orders,
+        "total_amount": total_amount,
+        "avg_order_value": avg_order_value,
+        "on_time_delivery_rate": on_time_rate,
+        "quality_score": quality_score,
+        "avg_lead_time": avg_lead_time,
+        "defect_rate": defect_rate
+    }

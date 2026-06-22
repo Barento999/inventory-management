@@ -8,6 +8,7 @@ import BulkOperationsDemo from '../pages/bulk/BulkOperationsDemo';
 import Register from '../pages/auth/Register';
 import ForgotPassword from '../pages/auth/ForgotPassword';
 import ResetPassword from '../pages/auth/ResetPassword';
+import Login from '../pages/auth/Login';
 import ProductList from '../pages/products/ProductList';
 import ProductDetails from '../pages/products/ProductDetails';
 import CategoryList from '../pages/categories/CategoryList';
@@ -42,8 +43,9 @@ import UserDetails from '../pages/users/UserDetails';
 import AuditLogList from '../pages/audit-logs/AuditLogList';
 import ShippingList from '../pages/shipping/ShippingList';
 import ShippingDetail from '../pages/shipping/ShippingDetail';
-import VendorPortal from '../pages/vendors/VendorPortal';
+import EnhancedVendorPortal from '../pages/vendors/EnhancedVendorPortal';
 import OrderKanban from '../pages/kanban/OrderKanban';
+import OrderCalendar from '../pages/calendar/OrderCalendar';
 import { useAuth } from '../context/AuthContext';
 
 function RequireAuth({ children }) {
@@ -97,7 +99,7 @@ export default function AppRoutes() {
         <Route path="suppliers" element={<ProtectedRoute permission="suppliers_view"><SupplierList /></ProtectedRoute>} />
         <Route path="suppliers/create" element={<ProtectedRoute permission="suppliers_create"><SupplierDetails /></ProtectedRoute>} />
         <Route path="suppliers/:id" element={<ProtectedRoute permission="suppliers_view"><SupplierDetails /></ProtectedRoute>} />
-        <Route path="vendors" element={<ProtectedRoute permission="suppliers_view"><VendorPortal /></ProtectedRoute>} />
+        <Route path="vendors" element={<ProtectedRoute permission="suppliers_view"><EnhancedVendorPortal /></ProtectedRoute>} />
         <Route path="customers" element={<ProtectedRoute permission="customers_view"><CustomerList /></ProtectedRoute>} />
         <Route path="customers/create" element={<ProtectedRoute permission="customers_create"><CustomerDetails /></ProtectedRoute>} />
         <Route path="customers/:id" element={<ProtectedRoute permission="customers_view"><CustomerDetails /></ProtectedRoute>} />
