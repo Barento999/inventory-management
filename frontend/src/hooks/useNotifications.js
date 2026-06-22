@@ -1,15 +1,20 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import apiClient from '../services/apiClient';
+import { useWebSocket } from './useWebSocket';
 
 /**
  * Hook for managing real-time notifications
- * Uses polling as fallback for WebSocket-less environments
+ * Uses WebSocket for real-time updates, polling as fallback
  */
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const pollingIntervalRef = useRef(null);
+  
+  // Get auth token
+  const token = localStorage.getItem('token');
+  const { isConnected, onMessage } = useWebSocket(token);
 
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
@@ -87,24 +92,51 @@ export const useNotifications = () => {
     }
   }, []);
 
-  // Start polling
+  // Listen for WebSocket messages
+  useEffect(() => {
+    const unsubscribe = onMessage((data) => {
+      if (data.type === 'notification') {
+        const newNotification = data.data;
+        
+        // Add new notification to the front
+        setNotifications(prev => [newNotification, ...prev].slice(0, 50));
+        
+        // Increment unread count
+        if (!newNotification.is_read) {
+          setUnreadCount(prev => prev + 1);
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, [onMessage]);
+
+  // Initial fetch and polling setup
   useEffect(() => {
     fetchNotifications();
 
-    // Poll every 30 seconds
-    pollingIntervalRef.current = setInterval(fetchNotifications, 30000);
+    // Only poll if WebSocket is not connected
+    if (!isConnected) {
+      pollingIntervalRef.current = setInterval(fetchNotifications, 30000);
+    } else {
+      // Clear polling if WebSocket connects
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    }
 
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, [fetchNotifications]);
+  }, [fetchNotifications, isConnected]);
 
   return {
     notifications,
     unreadCount,
     loading,
+    wsConnected: isConnected,
     fetchNotifications,
     markAsRead,
     markAllAsRead,
