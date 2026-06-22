@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useApi } from '../../hooks/useApi';
 import { searchApi } from '../../services/api';
 import { useDataRefresh } from '../../context/DataRefreshContext';
-import NotificationCenter from '../ui/NotificationCenter';
+import NotificationBell from '../notifications/NotificationBell';
 
 export default function TopNavbar({ onMenuToggle, mobileOpen }) {
   const { theme, toggleTheme } = useTheme();
@@ -88,7 +88,7 @@ export default function TopNavbar({ onMenuToggle, mobileOpen }) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4">
-        <NotificationCenter />
+        <NotificationBell />
         <button type="button" onClick={toggleTheme} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Toggle theme">
           {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         </button>
