@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import { ProtectedRoute, AccessDenied } from '../components/ProtectedRoute';
 import Dashboard from '../pages/dashboard/Dashboard';
+import EnhancedDashboard from '../pages/dashboard/EnhancedDashboard';
 import Login from '../pages/auth/Login';
 import Register from '../pages/auth/Register';
 import ForgotPassword from '../pages/auth/ForgotPassword';
@@ -21,6 +22,7 @@ import PurchaseDetails from '../pages/purchases/PurchaseDetails';
 import SaleList from '../pages/sales/SaleList';
 import SaleDetails from '../pages/sales/SaleDetails';
 import Reports from '../pages/reports/Reports';
+import AdvancedReports from '../pages/reports/AdvancedReports';
 import CustomReportBuilder from '../pages/reports/CustomReportBuilder';
 import Settings from '../pages/settings/Settings';
 import WarehouseList from '../pages/warehouses/WarehouseList';
@@ -84,7 +86,8 @@ export default function AppRoutes() {
           </RequireAuth>
         }
       >
-        <Route index element={<ProtectedRoute permission="reports_view"><Dashboard /></ProtectedRoute>} />
+        <Route index element={<ProtectedRoute permission="reports_view"><EnhancedDashboard /></ProtectedRoute>} />
+        <Route path="dashboard-classic" element={<ProtectedRoute permission="reports_view"><Dashboard /></ProtectedRoute>} />
         <Route path="products" element={<ProtectedRoute permission="products_view"><ProductList /></ProtectedRoute>} />
         <Route path="products/create" element={<ProtectedRoute permission="products_create"><ProductDetails /></ProtectedRoute>} />
         <Route path="products/:id" element={<ProtectedRoute permission="products_view"><ProductDetails /></ProtectedRoute>} />
@@ -128,6 +131,7 @@ export default function AppRoutes() {
         <Route path="calendar" element={<ProtectedRoute permission="sales_view"><OrderCalendar /></ProtectedRoute>} />
         <Route path="kanban" element={<ProtectedRoute permission="sales_view"><OrderKanban /></ProtectedRoute>} />
         <Route path="reports" element={<ProtectedRoute permission="reports_view"><Reports /></ProtectedRoute>} />
+        <Route path="reports/advanced" element={<ProtectedRoute permission="reports_view"><AdvancedReports /></ProtectedRoute>} />
         <Route path="reports/custom" element={<ProtectedRoute permission="reports_view"><CustomReportBuilder /></ProtectedRoute>} />
         <Route path="settings" element={<ProtectedRoute permission="settings_view"><Settings /></ProtectedRoute>} />
       </Route>
