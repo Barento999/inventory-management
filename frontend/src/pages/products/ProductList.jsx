@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import apiClient from '../../services/apiClient';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import SearchFilter from '../../components/ui/SearchFilter';
+import ExportButton from '../../components/ui/ExportButton';
 
 export default function ProductList() {
   const { user } = useAuth();
@@ -68,32 +70,52 @@ export default function ProductList() {
   const canUpdate = user?.permissions?.includes('products_update');
   const canDelete = user?.permissions?.includes('products_delete');
 
+  const filters = [
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select',
+      options: [
+        { value: 'Active', label: 'Active' },
+        { value: 'Inactive', label: 'Inactive' },
+      ],
+    },
+  ];
+
+  const exportColumns = ['sku', 'name', 'price', 'cost', 'stock', 'status'];
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Products</h1>
-        {canCreate && (
-          <Link
-            to="/products/create"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-          >
-            Add Product
-          </Link>
-        )}
+        <div className="flex gap-4">
+          {products.length > 0 && (
+            <ExportButton
+              data={products}
+              filename="products"
+              title="Products Export"
+              columns={exportColumns}
+            />
+          )}
+          {canCreate && (
+            <Link
+              to="/products/create"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Add Product
+            </Link>
+          )}
+        </div>
       </div>
 
-      <div className="flex gap-4">
-        <input
-          type="text"
-          placeholder="Search products..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          className="flex-1 px-4 py-2 border rounded-lg"
-        />
-      </div>
+      <SearchFilter
+        searchPlaceholder="Search by SKU, name..."
+        onSearch={(term) => {
+          setSearch(term);
+          setPage(1);
+        }}
+        filters={filters}
+      />
 
       {loading ? (
         <div className="flex justify-center py-8">
