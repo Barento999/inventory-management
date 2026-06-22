@@ -1,197 +1,241 @@
-import React, { useState } from 'react';
-import Input from './Input';
-import Select from './Select';
-import Button from './Button';
-import Modal from './Modal';
-import { Search, Filter, X, Save, Clock } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Search, X, ChevronDown, Filter } from 'lucide-react';
 
-export default function AdvancedSearch({ onSearch, fields, entityType }) {
-  const [isOpen, setIsOpen] = useState(false);
+const AdvancedSearch = ({
+  onSearch,
+  onFilter,
+  searchPlaceholder = 'Search...',
+  filters = [],
+  initialFilters = {},
+  debounceMs = 300,
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filters, setFilters] = useState([]);
-  const [savedSearches, setSavedSearches] = useState(() => {
-    const saved = localStorage.getItem(`savedSearches_${entityType}`);
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [activeFilters, setActiveFilters] = useState(initialFilters);
+  const [showFilters, setShowFilters] = useState(false);
+  const [debounceTimer, setDebounceTimer] = useState(null);
 
-  const addFilter = () => {
-    setFilters([...filters, { field: '', operator: 'equals', value: '' }]);
-  };
-
-  const removeFilter = (index) => {
-    setFilters(filters.filter((_, i) => i !== index));
-  };
-
-  const updateFilter = (index, key, value) => {
-    const newFilters = [...filters];
-    newFilters[index][key] = value;
-    setFilters(newFilters);
-  };
-
-  const handleSearch = () => {
-    onSearch({ searchTerm, filters });
-    setIsOpen(false);
-  };
-
-  const handleSaveSearch = () => {
-    const searchName = prompt('Enter a name for this search:');
-    if (searchName) {
-      const newSavedSearch = {
-        id: Date.now(),
-        name: searchName,
-        searchTerm,
-        filters,
-        createdAt: new Date().toISOString(),
-      };
-      setSavedSearches([...savedSearches, newSavedSearch]);
-      localStorage.setItem(`savedSearches_${entityType}`, JSON.stringify([...savedSearches, newSavedSearch]));
+  const handleSearchChange = useCallback((value) => {
+    setSearchTerm(value);
+    
+    // Clear existing timer
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
     }
-  };
 
-  const loadSavedSearch = (savedSearch) => {
-    setSearchTerm(savedSearch.searchTerm);
-    setFilters(savedSearch.filters);
-    onSearch({ searchTerm: savedSearch.searchTerm, filters: savedSearch.filters });
-    setIsOpen(false);
-  };
+    // Set new timer
+    const timer = setTimeout(() => {
+      onSearch?.(value);
+    }, debounceMs);
 
-  const deleteSavedSearch = (id) => {
-    setSavedSearches(savedSearches.filter(s => s.id !== id));
-    localStorage.setItem(`savedSearches_${entityType}`, JSON.stringify(savedSearches.filter(s => s.id !== id)));
-  };
+    setDebounceTimer(timer);
+  }, [debounceTimer, debounceMs, onSearch]);
 
-  const clearSearch = () => {
+  const handleFilterChange = useCallback((filterName, value) => {
+    const newFilters = { ...activeFilters, [filterName]: value };
+    setActiveFilters(newFilters);
+    onFilter?.(newFilters);
+  }, [activeFilters, onFilter]);
+
+  const handleClearFilters = useCallback(() => {
+    setActiveFilters({});
     setSearchTerm('');
-    setFilters([]);
-    onSearch({ searchTerm: '', filters: [] });
-  };
+    onFilter?.({});
+    onSearch?.('');
+  }, [onFilter, onSearch]);
 
-  const operators = [
-    { value: 'equals', label: 'Equals' },
-    { value: 'notEquals', label: 'Not Equals' },
-    { value: 'contains', label: 'Contains' },
-    { value: 'notContains', label: 'Not Contains' },
-    { value: 'greaterThan', label: 'Greater Than' },
-    { value: 'lessThan', label: 'Less Than' },
-    { value: 'startsWith', label: 'Starts With' },
-    { value: 'endsWith', label: 'Ends With' },
-  ];
+  const activeFilterCount = Object.keys(activeFilters).filter(
+    (key) => activeFilters[key] !== null && activeFilters[key] !== undefined && activeFilters[key] !== ''
+  ).length;
 
   return (
-    <>
+    <div className="space-y-4">
+      {/* Search Bar */}
       <div className="flex gap-2">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
-            id="search"
-            placeholder="Search..."
+          <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder={searchPlaceholder}
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            className="pl-10"
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          {searchTerm && (
+            <button
+              onClick={() => handleSearchChange('')}
+              className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
-        <Button variant="secondary" onClick={() => setIsOpen(true)}>
-          <Filter className="w-4 h-4 mr-1" /> Filters
-        </Button>
-        {savedSearches.length > 0 && (
-          <Select
-            value=""
-            onChange={(e) => {
-              const search = savedSearches.find(s => s.id === Number(e.target.value));
-              if (search) loadSavedSearch(search);
-            }}
-            options={[{ value: '', label: 'Saved Searches' }, ...savedSearches.map(s => ({ value: s.id, label: s.name }))]}
-            className="w-40"
-          />
-        )}
-        {(searchTerm || filters.length > 0) && (
-          <Button variant="secondary" onClick={clearSearch}>
-            <X className="w-4 h-4 mr-1" /> Clear
-          </Button>
+
+        {/* Filter Button */}
+        {filters.length > 0 && (
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${
+              showFilters || activeFilterCount > 0
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-300'
+            }`}
+          >
+            <Filter className="w-4 h-4" />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="ml-1 px-2 py-0.5 bg-white text-blue-600 rounded-full text-xs font-bold">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
         )}
       </div>
 
-      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Advanced Search">
-        <div className="space-y-4">
-          <Input
-            id="searchTerm"
-            label="Search Term"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Enter search term..."
-          />
+      {/* Filter Panel */}
+      {showFilters && filters.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filters.map((filter) => (
+              <div key={filter.name} className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {filter.label}
+                </label>
 
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-sm font-medium">Filters</label>
-              <Button size="sm" variant="secondary" onClick={addFilter}>
-                <Filter className="w-4 h-4 mr-1" /> Add Filter
-              </Button>
-            </div>
-            {filters.map((filter, index) => (
-              <div key={index} className="flex gap-2 mb-2">
-                <Select
-                  value={filter.field}
-                  onChange={(e) => updateFilter(index, 'field', e.target.value)}
-                  options={[{ value: '', label: 'Select field' }, ...fields]}
-                  className="flex-1"
-                />
-                <Select
-                  value={filter.operator}
-                  onChange={(e) => updateFilter(index, 'operator', e.target.value)}
-                  options={operators}
-                  className="flex-1"
-                />
-                <Input
-                  value={filter.value}
-                  onChange={(e) => updateFilter(index, 'value', e.target.value)}
-                  placeholder="Value"
-                  className="flex-1"
-                />
-                <Button size="sm" variant="danger" onClick={() => removeFilter(index)}>
-                  <X className="w-4 h-4" />
-                </Button>
+                {filter.type === 'select' && (
+                  <select
+                    value={activeFilters[filter.name] || ''}
+                    onChange={(e) => handleFilterChange(filter.name, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">All</option>
+                    {filter.options?.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {filter.type === 'text' && (
+                  <input
+                    type="text"
+                    placeholder={filter.placeholder}
+                    value={activeFilters[filter.name] || ''}
+                    onChange={(e) => handleFilterChange(filter.name, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                )}
+
+                {filter.type === 'date' && (
+                  <input
+                    type="date"
+                    value={activeFilters[filter.name] || ''}
+                    onChange={(e) => handleFilterChange(filter.name, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                )}
+
+                {filter.type === 'dateRange' && (
+                  <div className="space-y-2">
+                    <input
+                      type="date"
+                      placeholder="From"
+                      value={activeFilters[`${filter.name}_from`] || ''}
+                      onChange={(e) => handleFilterChange(`${filter.name}_from`, e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                      type="date"
+                      placeholder="To"
+                      value={activeFilters[`${filter.name}_to`] || ''}
+                      onChange={(e) => handleFilterChange(`${filter.name}_to`, e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                )}
+
+                {filter.type === 'range' && (
+                  <div className="space-y-2">
+                    <input
+                      type="number"
+                      placeholder="Min"
+                      value={activeFilters[`${filter.name}_min`] || ''}
+                      onChange={(e) => handleFilterChange(`${filter.name}_min`, e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Max"
+                      value={activeFilters[`${filter.name}_max`] || ''}
+                      onChange={(e) => handleFilterChange(`${filter.name}_max`, e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                )}
+
+                {filter.type === 'checkbox' && (
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={activeFilters[filter.name] === true}
+                      onChange={(e) => handleFilterChange(filter.name, e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      {filter.checkboxLabel}
+                    </span>
+                  </label>
+                )}
               </div>
             ))}
           </div>
 
-          <div className="flex gap-2">
-            <Button onClick={handleSearch}>Search</Button>
-            <Button variant="secondary" onClick={handleSaveSearch}>
-              <Save className="w-4 h-4 mr-1" /> Save Search
-            </Button>
-            <Button variant="secondary" onClick={() => setIsOpen(false)}>Cancel</Button>
+          {/* Filter Actions */}
+          <div className="flex gap-2 justify-end pt-2 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={handleClearFilters}
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+            >
+              Clear All
+            </button>
+            <button
+              onClick={() => setShowFilters(false)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Apply
+            </button>
           </div>
-
-          {savedSearches.length > 0 && (
-            <div className="border-t pt-4">
-              <h3 className="text-sm font-medium mb-2">Saved Searches</h3>
-              <div className="space-y-2">
-                {savedSearches.map(search => (
-                  <div key={search.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-gray-400" />
-                      <div>
-                        <p className="text-sm font-medium">{search.name}</p>
-                        <p className="text-xs text-gray-500">{new Date(search.createdAt).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="secondary" onClick={() => loadSavedSearch(search)}>
-                        Load
-                      </Button>
-                      <Button size="sm" variant="danger" onClick={() => deleteSavedSearch(search.id)}>
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
-      </Modal>
-    </>
+      )}
+
+      {/* Active Filters Display */}
+      {activeFilterCount > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(activeFilters).map(([key, value]) => {
+            if (!value || value === '') return null;
+            
+            const filterConfig = filters.find(f => f.name === key || key.startsWith(f.name));
+            if (!filterConfig) return null;
+
+            return (
+              <div
+                key={key}
+                className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm"
+              >
+                <span>{filterConfig.label}: {value === true ? 'Yes' : value}</span>
+                <button
+                  onClick={() => handleFilterChange(key, '')}
+                  className="hover:text-blue-600 dark:hover:text-blue-400"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
-}
+};
+
+export default AdvancedSearch;
