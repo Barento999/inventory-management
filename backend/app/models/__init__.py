@@ -16,6 +16,7 @@ from app.models.serial_number import SerialNumber
 from app.models.batch import Batch
 from app.models.product_return import Return
 from app.models.invoice import Invoice
+from app.models.file import File
 
 __all__ = [
     "User",
@@ -36,4 +37,5 @@ __all__ = [
     "Batch",
     "Return",
     "Invoice",
+    "File",
 ]

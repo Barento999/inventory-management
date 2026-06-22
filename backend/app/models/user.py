@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, func
+from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 
@@ -11,3 +12,5 @@ class User(Base):
     name = Column(String(255), nullable=False)
     role = Column(String(50), default="user")
     created_at = Column(DateTime, default=func.now())
+
+    notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
