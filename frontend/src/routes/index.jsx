@@ -5,6 +5,7 @@ import { ProtectedRoute, AccessDenied } from '../components/ProtectedRoute';
 import Dashboard from '../pages/dashboard/Dashboard';
 import EnhancedDashboard from '../pages/dashboard/EnhancedDashboard';
 import BulkOperationsDemo from '../pages/bulk/BulkOperationsDemo';
+import BulkAndFileIntegration from '../pages/integration/BulkAndFileIntegration';
 import Register from '../pages/auth/Register';
 import ForgotPassword from '../pages/auth/ForgotPassword';
 import ResetPassword from '../pages/auth/ResetPassword';
@@ -135,6 +136,7 @@ export default function AppRoutes() {
         <Route path="shipping" element={<ProtectedRoute permission="sales_view"><ShippingList /></ProtectedRoute>} />
         <Route path="shipping/:id" element={<ProtectedRoute permission="sales_view"><ShippingDetail /></ProtectedRoute>} />
         <Route path="bulk" element={<ProtectedRoute permission="products_view"><BulkOperationsDemo /></ProtectedRoute>} />
+        <Route path="integration" element={<ProtectedRoute permission="products_view"><BulkAndFileIntegration /></ProtectedRoute>} />
         <Route path="reports" element={<ProtectedRoute permission="reports_view"><Reports /></ProtectedRoute>} />
         <Route path="reports/advanced" element={<ProtectedRoute permission="reports_view"><AdvancedReports /></ProtectedRoute>} />
         <Route path="reports/custom" element={<ProtectedRoute permission="reports_view"><CustomReportBuilder /></ProtectedRoute>} />
